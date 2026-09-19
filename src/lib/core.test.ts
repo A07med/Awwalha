@@ -25,10 +25,23 @@ describe('Perfect Second timing and ranking', () => {
   it('locks winners before a cutoff tie', () => expect(resolveScoreCutoff([{ participantId: 'a', score: 4 }, { participantId: 'b', score: 9 }, { participantId: 'c', score: 21 }, { participantId: 'd', score: 21 }, { participantId: 'e', score: 21 }], 3)).toEqual({ locked: [{ participantId: 'a', score: 4 }, { participantId: 'b', score: 9 }], tied: [{ participantId: 'c', score: 21 }, { participantId: 'd', score: 21 }, { participantId: 'e', score: 21 }], remainingSeats: 1 }))
   it('supports one winner', () => expect(resolveScoreCutoff([{ participantId: 'a', score: 1 }, { participantId: 'b', score: 2 }], 1).locked).toHaveLength(1))
   it('supports six winners', () => expect(resolveScoreCutoff(Array.from({ length: 8 }, (_, index) => ({ participantId: String(index), score: index })), 6).locked).toHaveLength(6))
+  it('supports every configured winner count from one to six', () => {
+    for (let seats = 1; seats <= 6; seats += 1) {
+      expect(resolveScoreCutoff(Array.from({ length: 8 }, (_, index) => ({ participantId: String(index), score: index })), seats).locked).toHaveLength(seats)
+    }
+  })
+  it('can resolve repeated cutoff ties without random selection', () => {
+    const first = resolveScoreCutoff([{ participantId: 'a', score: 1 }, { participantId: 'b', score: 8 }, { participantId: 'c', score: 8 }, { participantId: 'd', score: 8 }], 3)
+    expect(first).toMatchObject({ remainingSeats: 2 })
+    const second = resolveScoreCutoff(first.tied.map((item, index) => ({ ...item, score: index === 0 ? 2 : 7 })), first.remainingSeats)
+    expect(second).toMatchObject({ locked: [{ participantId: 'b', score: 2 }], remainingSeats: 1 })
+    expect(second.tied).toHaveLength(2)
+  })
 })
 
 describe('First Look', () => {
   it('scores absolute guess error', () => expect(firstLookScore(34, 36)).toBe(2))
+  it('keeps the correct count out of unrevealed public state', () => expect(JSON.stringify(demoLobbyState)).not.toContain('correctCount'))
   it('creates deterministic non-overlapping grid cells', () => {
     const first = generatePackedPositions(712, 36)
     expect(generatePackedPositions(712, 36)).toEqual(first)
