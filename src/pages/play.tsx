@@ -4,7 +4,7 @@ import { PageShell } from '../components/page-shell'
 import { Button, Card, StatusPill } from '../components/ui'
 import { usePublicState } from '../hooks/use-public-state'
 import { useScheduledClock } from '../hooks/use-scheduled-clock'
-import { demoPerfectState } from '../lib/demo-state'
+import { demoLobbyState, demoPerfectState } from '../lib/demo-state'
 import { submitFirstLook, submitPerfectSecond } from '../lib/api'
 import { readSession } from '../lib/session'
 import { perfectSecondScore } from '../lib/ranking'
@@ -93,7 +93,10 @@ export function PlayPage() {
   const [guess, setGuess] = useState(() => submission.status !== 'idle' && submission.attempt.kind === 'first_look' ? String(submission.attempt.guess) : '')
   const submitted = submission.status !== 'idle'
   const attemptLockRef = useRef<string | null>(submission.status === 'idle' ? null : submission.attempt.roundId)
-  const { state } = usePublicState({ submitted, timingCritical }, demoPerfectState)
+  // Never let the live app's illustrative active round block its first real
+  // state request on a slow connection.
+  const initialState = import.meta.env.VITE_APP_MODE === 'supabase' ? demoLobbyState : demoPerfectState
+  const { state } = usePublicState({ submitted, timingCritical }, initialState)
   const round = state.round
   const currentRoundIdRef = useRef<string | null>(round?.id ?? null)
   currentRoundIdRef.current = round?.id ?? null

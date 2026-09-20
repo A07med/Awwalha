@@ -18,6 +18,7 @@ export function usePublicState(options: PollOptions = {}, demoState = demoLobbyS
   const timerRef = useRef<number | null>(null)
   const failureRef = useRef(0)
   const optionsRef = useRef(options)
+  const hydratedRef = useRef(false)
   optionsRef.current = options
 
   const refresh = useCallback(async () => {
@@ -26,7 +27,11 @@ export function usePublicState(options: PollOptions = {}, demoState = demoLobbyS
     requestRef.current = controller
     try {
       const next = await fetchPublicState(controller.signal)
-      setState((current) => next.stateVersion === current.stateVersion ? current : next)
+      setState((current) => {
+        if (!hydratedRef.current || next.stateVersion > current.stateVersion) return next
+        return current
+      })
+      hydratedRef.current = true
       failureRef.current = 0
       setError(null)
     } catch (reason) {
