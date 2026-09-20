@@ -69,9 +69,9 @@ export function JoinPage() {
         <button className={mode === 'recover' ? 'active' : ''} onClick={() => setMode('recover')}>استرجاع دخولي</button>
       </div>
       <form onSubmit={submit}>
-        {mode === 'join' && <label><span>الاسم</span><div className="input-wrap"><UserRound /><input value={name} onChange={(event) => setName(event.target.value)} placeholder="اسمك على الشاشة" autoComplete="name" required /></div></label>}
-        <label><span>رقم الهاتف</span><div className="input-wrap"><Phone /><input dir="ltr" inputMode="tel" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="9XXX XXXX" autoComplete="tel" required /></div></label>
-        {mode === 'recover' && <label><span>رمز الدخول</span><div className="input-wrap"><KeyRound /><input dir="ltr" value={code} onChange={(event) => setCode(event.target.value.toUpperCase())} placeholder="XXXX-XXXX" autoComplete="one-time-code" required /></div></label>}
+        {mode === 'join' && <label><span>الاسم</span><div className="input-wrap"><UserRound /><input type="text" value={name} onChange={(event) => setName(event.target.value)} placeholder="اسمك على الشاشة" autoComplete="name" enterKeyHint="next" required /></div></label>}
+        <label><span>رقم الهاتف</span><div className="input-wrap"><Phone /><input dir="ltr" type="tel" inputMode="tel" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="9XXX XXXX" autoComplete="tel" enterKeyHint={mode === 'join' ? 'done' : 'next'} required /></div></label>
+        {mode === 'recover' && <label><span>رمز الدخول</span><div className="input-wrap"><KeyRound /><input dir="ltr" type="text" value={code} onChange={(event) => setCode(event.target.value.toUpperCase())} placeholder="XXXX-XXXX" autoComplete="one-time-code" autoCapitalize="characters" spellCheck={false} enterKeyHint="done" required /></div></label>}
         {error && <p className="form-error" role="alert">{error}</p>}
         <Button type="submit" disabled={busy}>{busy ? 'لحظة…' : mode === 'join' ? 'سجّلني' : 'استرجاع الدخول'} <ArrowLeft size={20} /></Button>
       </form>
