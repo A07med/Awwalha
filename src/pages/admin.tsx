@@ -18,7 +18,7 @@ export function AdminPage() {
   const [taifStarting, setTaifStarting] = useState(false)
   const taifRound = state.currentGame === 'taif' ? state.round : null
   const joinUrl = typeof location === 'undefined' ? '/join' : location.origin + '/join'
-  useEffect(() => { void QRCode.toDataURL(joinUrl, { width: 640, margin: 2, color: { dark: '#071f2b', light: '#00000000' } }).then(setQr) }, [joinUrl])
+  useEffect(() => { void QRCode.toDataURL(joinUrl, { width: 640, margin: 2, color: { dark: '#210b2c', light: '#00000000' } }).then(setQr) }, [joinUrl])
 
   function flash(message: string) { setNotice(message); window.setTimeout(() => setNotice(''), 2400) }
   async function act(action: () => Promise<unknown>, demoMessage: string) {

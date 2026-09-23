@@ -5,7 +5,7 @@ export function PageShell({ children, className = '', header = true }: { childre
   return (
     <main className={'page-shell ' + className} dir="rtl">
       <AmbientBackground />
-      {header && <header className="site-header"><Wordmark compact /><span>جماعة العلوم الزراعية والبحرية</span></header>}
+      {header && <header className="site-header"><Wordmark compact /><span>مساحة للحظات التي تُحكى</span></header>}
       <div className="page-content">{children}</div>
     </main>
   )

@@ -59,7 +59,7 @@ export function JoinPage() {
 
   return <PageShell className="join-page">
     <section className="join-intro">
-      <p className="eyebrow">أول نبضة · أول موجة</p>
+      <p className="eyebrow">أول لحظة · أول حكاية</p>
       <h1>جاهز تكون<br /><em>أولها؟</em></h1>
       <p>سجّل مرة واحدة، وخلك على نفس الصفحة طول الأمسية.</p>
     </section>

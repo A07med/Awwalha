@@ -17,5 +17,5 @@ export function StageTaifPage() {
 
   if (revealed) return <main className="taif-stage-final" dir="rtl"><h1>لدينا ٤ فائزين</h1></main>
   if (active) return <main className="taif-stage-active" aria-label="طيف" />
-  return <main className="taif-stage-ready" dir="rtl"><div className="taif-stage-orb" /><p>أولها تقدم</p><h1>طَيْف</h1><strong>{state.submittedCount} مستعد</strong></main>
+  return <main className="taif-stage-ready" dir="rtl"><img className="taif-stage-brand" src="/awwalha-wordmark.svg" alt="أولها" /><div className="taif-stage-orb" /><p>أولها تقدم</p><h1>طَيْف</h1><strong>{state.submittedCount} مستعد</strong></main>
 }

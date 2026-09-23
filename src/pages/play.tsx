@@ -190,7 +190,7 @@ export function PlayPage() {
   }
 
   return <PageShell className="play-page">
-    <section className="participant-top"><div><span>مساء الخير،</span><h1>{session.displayName}</h1></div><StatusPill>مشارك #{session.participantPublicId.slice(-4).toUpperCase()}</StatusPill></section>
+    <section className="participant-top"><div><span>مساء الخير،</span><h1>{session.displayName}</h1></div><StatusPill>مشارك <bdi dir="ltr">#{session.participantPublicId.slice(-4).toUpperCase()}</bdi></StatusPill></section>
     {winner ? <Card className="participant-panel result-panel winner-panel" aria-live="polite"><span className="result-emoji" aria-hidden="true">🎉</span><Trophy /><p className="eyebrow">النتيجة النهائية</p><h2>أنت من الفائزين</h2><p>اسمك الآن على الشاشة الكبيرة.</p></Card>
     : revealedWithoutWin ? <Card className="participant-panel result-panel" aria-live="polite"><Sparkles /><p className="eyebrow">انتهت الجولة</p><h2>شكرًا لمشاركتك</h2><p>خلك قريب — الجولة القادمة قد تكون لك.</p></Card>
     : isTieSpectator ? <Card className="participant-panel result-panel tie-spectator" aria-live="polite"><Sparkles /><p className="eyebrow">تعادل</p><h2>جولة فاصلة جارية</h2><p>تابع الشاشة — هذه الجولة للمشاركين المتعادلين.</p></Card>

@@ -6,14 +6,12 @@ import { PlayPage } from './pages/play'
 import { StageFirstLookPage } from './pages/stage-first-look'
 import { StagePerfectPage } from './pages/stage-perfect'
 import { StageTaifPage } from './pages/stage-taif'
-import { readSession } from './lib/session'
+import { LandingPage } from './pages/landing'
 import { AdminGuard } from './components/admin-guard'
-
-function RootRedirect() { return <Navigate to={readSession() ? '/play' : '/join'} replace /> }
 
 export default function App() {
   return <Routes>
-    <Route path="/" element={<RootRedirect />} />
+    <Route path="/" element={<LandingPage />} />
     <Route path="/join" element={<JoinPage />} />
     <Route path="/play" element={<PlayPage />} />
     <Route path="/admin/login" element={<AdminLoginPage />} />
