@@ -1,4 +1,5 @@
-export type GameType = 'perfect_second' | 'first_look'
+export type GameType = 'perfect_second' | 'first_look' | 'taif'
+export type TaifColor = 'green' | 'yellow'
 export type RoundPhase = 'lobby' | 'preparing' | 'countdown' | 'active' | 'answering' | 'closed' | 'resolved' | 'tie_break' | 'revealed' | 'ended'
 
 export interface PublicWinner {
@@ -18,6 +19,7 @@ export interface PublicRound {
   targetMs?: number
   hideTimerAfterMs?: number
   displayDurationMs?: number
+  revealAt?: string
   visualCategory?: 'seeds' | 'leaves' | 'fish' | 'bubbles' | 'drops'
   visualSeed?: number
   winnerTargetCount: number
@@ -35,6 +37,7 @@ export interface PublicEventState {
   submittedCount: number
   tieEligiblePublicIds: string[]
   winners: PublicWinner[]
+  taifWinners: Array<{ participantPublicId: string; color: TaifColor }>
   revealedCorrectCount?: number
   serverPublishedAt: string
 }
@@ -55,6 +58,7 @@ export interface PollOptions {
   submitted?: boolean
   phase?: RoundPhase
   operator?: boolean
+  taifReady?: boolean
 }
 
 export interface ClockSample {

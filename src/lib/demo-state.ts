@@ -20,6 +20,7 @@ export const demoPerfectState: PublicEventState = {
   submittedCount: 186,
   tieEligiblePublicIds: [],
   winners: [],
+  taifWinners: [],
   serverPublishedAt: new Date().toISOString(),
 }
 
@@ -44,6 +45,7 @@ export const demoFirstLookState: PublicEventState = {
   submittedCount: 311,
   tieEligiblePublicIds: [],
   winners: [],
+  taifWinners: [],
   serverPublishedAt: new Date().toISOString(),
 }
 
@@ -57,5 +59,24 @@ export const demoLobbyState: PublicEventState = {
   submittedCount: 0,
   tieEligiblePublicIds: [],
   winners: [],
+  taifWinners: [],
   serverPublishedAt: new Date().toISOString(),
+}
+
+export const demoTaifState: PublicEventState = {
+  ...demoLobbyState,
+  stateVersion: 34,
+  phase: 'active',
+  currentGame: 'taif',
+  round: {
+    id: 'demo-taif',
+    gameType: 'taif',
+    phase: 'active',
+    startsAt: new Date(Date.now() - 800).toISOString(),
+    closesAt: new Date(Date.now() + 5200).toISOString(),
+    revealAt: new Date(Date.now() + 5200).toISOString(),
+    winnerTargetCount: 4,
+    seatsAvailable: 4,
+  },
+  submittedCount: 483,
 }

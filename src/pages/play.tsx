@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Check, Clock3, Eye, Sparkles, Trophy } from 'lucide-react'
 import { PageShell } from '../components/page-shell'
 import { Button, Card, StatusPill } from '../components/ui'
@@ -9,6 +9,7 @@ import { submitFirstLook, submitPerfectSecond } from '../lib/api'
 import { readSession } from '../lib/session'
 import { perfectSecondScore } from '../lib/ranking'
 import { useClockSync } from '../hooks/use-clock-sync'
+import { TaifScreen } from '../components/taif-screen'
 
 type SubmissionStatus = 'idle' | 'locally_submitted' | 'submitting' | 'confirmed' | 'failed'
 
@@ -91,12 +92,14 @@ export function PlayPage() {
   const [submission, setSubmission] = useState<SubmissionState>(() => readStoredSubmission(session.participantPublicId))
   const [timingCritical, setTimingCritical] = useState(false)
   const [guess, setGuess] = useState(() => submission.status !== 'idle' && submission.attempt.kind === 'first_look' ? String(submission.attempt.guess) : '')
+  const [taifReady, setTaifReady] = useState(false)
+  const updateTaifReady = useCallback((ready: boolean) => setTaifReady(ready), [])
   const submitted = submission.status !== 'idle'
   const attemptLockRef = useRef<string | null>(submission.status === 'idle' ? null : submission.attempt.roundId)
   // Never let the live app's illustrative active round block its first real
   // state request on a slow connection.
   const initialState = import.meta.env.VITE_APP_MODE === 'supabase' ? demoLobbyState : demoPerfectState
-  const { state } = usePublicState({ submitted, timingCritical }, initialState)
+  const { state } = usePublicState({ submitted, timingCritical, taifReady }, initialState)
   const round = state.round
   const currentRoundIdRef = useRef<string | null>(round?.id ?? null)
   currentRoundIdRef.current = round?.id ?? null
@@ -125,6 +128,8 @@ export function PlayPage() {
   const revealedWithoutWin = state.phase === 'revealed' && !winner
 
   const countdown = useMemo(() => elapsedMs < 0 ? Math.max(1, Math.ceil(Math.abs(elapsedMs) / 1000)) : 0, [elapsedMs])
+
+  if (round?.gameType === 'taif') return <TaifScreen state={state} session={session} elapsedMs={elapsedMs} onReadyChange={updateTaifReady} />
 
   function updateSubmission(status: Exclude<SubmissionStatus, 'idle'>, attempt: SubmissionAttempt) {
     if (currentRoundIdRef.current !== attempt.roundId) return

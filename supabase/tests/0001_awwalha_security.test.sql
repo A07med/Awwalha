@@ -38,7 +38,7 @@ select throws_ok(format('select public.submit_perfect_second(%L, %L, 6005, ''{}'
 select is((select signed_delta_ms from public.perfect_second_attempts limit 1), 4, 'Perfect Second signed delta is correct');
 select is((select absolute_error_ms from public.perfect_second_attempts limit 1), 4, 'Perfect Second absolute score is correct');
 
-update public.game_rounds set phase = 'closed' where id = (select (value->>'roundId')::uuid from prepared);
+update public.game_rounds set phase = 'closed', starts_at = clock_timestamp() - interval '10 seconds', closes_at = clock_timestamp() - interval '4 seconds' where id = (select (value->>'roundId')::uuid from prepared);
 select throws_ok(format('select public.submit_perfect_second(%L, %L, 6010, ''{}''::jsonb)', (select value->>'token' from registration_result), (select value->>'roundId' from prepared)), '22023', 'round_closed', 'server enforces round close');
 
 select lives_ok($$select public.admin_reset_games('20000000-0000-0000-0000-000000000002')$$, 'game reset succeeds');

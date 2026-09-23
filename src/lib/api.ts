@@ -45,6 +45,10 @@ export async function submitFirstLook(token: string, roundId: string, guess: num
   return rpc<{ guess: number }>('submit_first_look', { p_session_token: token, p_round_id: roundId, p_guess: guess })
 }
 
+export async function joinTaifRound(token: string, roundId: string) {
+  return rpc<{ ready: true; alreadyReady: boolean }>('join_taif_round', { p_session_token: token, p_round_id: roundId })
+}
+
 export async function adminPrepareRound(input: {
   gameType: 'perfect_second' | 'first_look'; winnerCount: number; targetMs?: number; hideTimerAfterMs?: number; correctCount?: number; visualSeed?: number; visualCategory?: string; displayDurationMs?: number
 }) {
@@ -62,6 +66,8 @@ export async function adminPrepareRound(input: {
 }
 
 export const adminSetRegistration = (open: boolean) => rpc('admin_set_registration', { p_open: open, p_request_id: crypto.randomUUID() })
+export const adminPrepareTaif = () => rpc<{ roundId: string }>('admin_prepare_taif', { p_request_id: crypto.randomUUID() })
+export const adminStartTaif = (roundId: string) => rpc<{ roundId: string; startsAt: string; revealAt: string; winnerCount: number }>('admin_start_taif', { p_round_id: roundId, p_request_id: crypto.randomUUID() })
 export const adminCloseRound = (roundId: string) => rpc('admin_close_round', { p_round_id: roundId, p_request_id: crypto.randomUUID() })
 export const adminResolveRound = (roundId: string) => rpc('admin_resolve_round', { p_round_id: roundId, p_request_id: crypto.randomUUID() })
 export const adminStartTieBreak = (roundId: string) => rpc('admin_start_tie_break', { p_parent_round_id: roundId, p_request_id: crypto.randomUUID() })

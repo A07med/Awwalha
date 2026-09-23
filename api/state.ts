@@ -10,6 +10,7 @@ const fallback = {
   submittedCount: 0,
   tieEligiblePublicIds: [],
   winners: [],
+  taifWinners: [],
   serverPublishedAt: new Date(0).toISOString(),
 }
 

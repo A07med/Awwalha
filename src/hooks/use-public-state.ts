@@ -4,8 +4,8 @@ import { fetchPublicState } from '../lib/api'
 import { demoLobbyState } from '../lib/demo-state'
 
 export function pollingDelay(options: PollOptions, failureCount: number, random = Math.random()) {
-  const base = options.operator ? 600 : options.submitted ? 7000 : options.phase === 'preparing' || options.phase === 'countdown' ? 2000 : 6000
-  const span = options.operator ? 400 : options.submitted ? 5000 : options.phase === 'preparing' || options.phase === 'countdown' ? 2000 : 4000
+  const base = options.operator ? 600 : options.taifReady ? 1500 : options.submitted ? 7000 : options.phase === 'preparing' || options.phase === 'countdown' ? 2000 : 6000
+  const span = options.operator ? 400 : options.taifReady ? 1000 : options.submitted ? 5000 : options.phase === 'preparing' || options.phase === 'countdown' ? 2000 : 4000
   const backoff = Math.min(4, 2 ** failureCount)
   return Math.round((base + random * span) * backoff)
 }
