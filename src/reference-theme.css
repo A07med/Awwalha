@@ -1,13 +1,13 @@
 :root {
   --awwalha-bg: #210b2c;
-  --awwalha-surface: #2d153d;
+  --awwalha-surface: #38263f;
   --awwalha-purple: #210b2c;
   --awwalha-wisteria: #bc96e6;
   --awwalha-gold: #ffd166;
   --awwalha-text: #fbf6ff;
-  --awwalha-muted: #c9b8d4;
-  --awwalha-border: rgba(188, 150, 230, .38);
-  --awwalha-glow: 0 0 56px rgba(188, 150, 230, .3);
+  --awwalha-muted: #d2bfd5;
+  --awwalha-border: rgba(188, 150, 204, .3);
+  --awwalha-glow: 0 0 56px rgba(255, 209, 102, .2);
   --font-display: Tajawal, 'IBM Plex Sans Arabic', sans-serif;
   --font-ui: 'IBM Plex Sans Arabic', sans-serif;
   --font-latin: 'Inter Variable', Inter, sans-serif;
@@ -26,37 +26,31 @@
 
 h1, h2, h3, strong { font-synthesis: none; }
 .wordmark { display: inline-grid; place-items: center; line-height: 0; }
-.wordmark-image { display: block; width: clamp(126px, 11vw, 176px); height: auto; filter: drop-shadow(0 0 19px rgba(188,150,230,.3)); }
+.wordmark-image { display: block; width: clamp(126px, 11vw, 176px); height: auto; filter: drop-shadow(0 8px 24px rgba(255,209,102,.12)); }
 .wordmark-image.compact { width: 94px; }
 .site-header { border-bottom: 0; min-height: 74px; }
-.page-shell { isolation: isolate; }
-.page-shell::before { opacity: .14; }
+.page-shell { isolation: isolate; background: linear-gradient(180deg, #28182e, #36233d 56%, #24142b); }
+.page-shell::before { opacity: .04; }
 .ambient { z-index: 0; opacity: 1; }
-.ambient::after { left: -15%; right: -15%; bottom: -85px; height: 165px; border: 1px solid rgba(188,150,230,.26); border-radius: 50% 50% 0 0; background: linear-gradient(0deg, rgba(107,41,137,.28), transparent); box-shadow: 0 -24px 70px rgba(188,150,230,.1); }
-.ambient span { border-radius: 48% 52% 38% 62%; transform: rotate(24deg); }
-.ambient span:nth-child(1) { width: min(80vw, 650px); height: min(72vw, 530px); left: -25%; top: 42%; background: radial-gradient(ellipse at 90% 65%, rgba(130,65,168,.35), transparent 68%); border-color: rgba(188,150,230,.17); }
-.ambient span:nth-child(2) { width: min(48vw, 420px); height: min(44vw, 390px); right: -18%; top: 8%; border-color: rgba(255,209,102,.18); background: radial-gradient(ellipse at 5% 95%, rgba(255,209,102,.11), transparent 70%); }
-.ambient span:nth-child(3) { width: 115%; height: 150px; left: -8%; bottom: -100px; transform: rotate(-5deg); border-color: rgba(188,150,230,.23); background: linear-gradient(180deg, rgba(188,150,230,.12), rgba(47,13,66,.88)); }
-.card { border: 1px solid rgba(188,150,230,.38); background: linear-gradient(145deg, rgba(37,17,50,.9), rgba(22,9,31,.94)); box-shadow: 0 25px 75px rgba(9,1,16,.44), inset 0 1px rgba(255,255,255,.035); }
-.button { color: #281624; box-shadow: 0 10px 28px rgba(255,209,102,.18), inset 0 1px rgba(255,255,255,.4); }
+.ambient::after, .ambient span { display: none; }
+.card { border: 1px solid var(--awwalha-border); background: rgba(49,31,56,.92); box-shadow: 0 20px 60px rgba(18,8,23,.22); }
+.button { color: #281624; background: linear-gradient(135deg, #ffe09a, #ffd166); box-shadow: 0 9px 28px rgba(255,209,102,.14); }
 .button:hover:not(:disabled) { transform: translateY(-2px); }
 .eyebrow { color: var(--awwalha-gold); }
 .input-wrap svg { color: var(--awwalha-wisteria); }
 .status-pill { background: rgba(188,150,230,.12); }
 
 /* Registration is one centered mobile composition, with recovery in place. */
-.join-page { background: radial-gradient(ellipse at 8% 77%, rgba(150,80,188,.36), transparent 32%), radial-gradient(ellipse at 85% 88%, rgba(255,184,87,.14), transparent 24%), linear-gradient(160deg, #130819, #210b2c 56%, #17091e); }
+.join-page { background: linear-gradient(180deg, #29192f, #392541 64%, #27172e); }
+.join-page .ambient { background: url('/poster-horizon-mobile.svg') center bottom / min(100vw, 720px) auto no-repeat; }
 .join-page .page-content { width: min(100%, 480px); max-width: 480px; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 0; padding: max(24px, env(safe-area-inset-top)) 22px max(22px, env(safe-area-inset-bottom)); }
-.join-page .ambient::after { bottom: -54px; height: 135px; background: linear-gradient(0deg, rgba(126,54,154,.48), rgba(126,54,154,.05)); }
-.join-page .ambient span:nth-child(1) { width: 330px; height: 470px; top: auto; bottom: -195px; left: -145px; border-width: 24px; border-color: rgba(188,150,230,.12); transform: rotate(19deg); }
-.join-page .ambient span:nth-child(2) { width: 210px; height: 300px; top: auto; bottom: -136px; right: -130px; border-width: 13px; border-color: rgba(255,209,102,.2); transform: rotate(-24deg); }
-.join-brand { position: relative; z-index: 1; display: grid; justify-items: center; margin-bottom: 12px; }
-.join-brand .wordmark-image { width: clamp(125px, 30vw, 170px); }
-.join-brand > span { margin-top: -8px; font: 600 .47rem/1 var(--font-latin); letter-spacing: .43em; color: #d6b7e9; }
+.join-brand { position: relative; z-index: 1; display: grid; justify-items: center; margin-bottom: 6px; }
+.join-brand .wordmark-image { width: clamp(138px, 32vw, 190px); }
+.join-brand > span { display: none; }
 .join-intro { text-align: center; margin: 0 0 23px; }
-.join-intro h1 { font: 800 clamp(2.15rem, 6vw, 2.8rem)/1.18 var(--font-display); letter-spacing: -.025em; margin: 0; }
+.join-intro h1 { font: 800 clamp(2.15rem, 6vw, 2.8rem)/1.18 var(--font-display); letter-spacing: -.025em; margin: 0; color: #ffdc91; }
 .join-intro > p:last-child { max-width: none; margin: 3px 0 0; color: #e5d6ed; font-size: .93rem; line-height: 1.65; }
-.join-card { width: 100%; padding: 21px 23px 20px; border-radius: 20px; background: linear-gradient(150deg, rgba(33,15,46,.86), rgba(20,9,30,.85)); backdrop-filter: blur(16px); }
+.join-card { width: 100%; padding: 21px 23px 20px; border-radius: 20px; background: rgba(42,27,49,.95); backdrop-filter: none; }
 .join-card form { gap: 12px; }
 .join-card label { gap: 5px; }
 .join-card label > span { font-size: .8rem; }
@@ -69,35 +63,39 @@ h1, h2, h3, strong { font-synthesis: none; }
 .success-card h1 { font-family: var(--font-display); }
 
 /* Participant surfaces remain single-purpose, never game selection. */
-.play-page { background: radial-gradient(ellipse at 7% 83%, rgba(255,198,111,.14), transparent 26%), radial-gradient(ellipse at 90% 66%, rgba(129,50,175,.34), transparent 42%), linear-gradient(160deg, #130819, #210b2c 52%, #18091f); }
+.play-page { background: linear-gradient(180deg, #28192f, #382440 65%, #26162c); }
+.play-page .ambient { background: url('/poster-horizon-mobile.svg') center bottom / min(100vw, 600px) auto no-repeat; opacity: .42; }
 .play-page .site-header { justify-content: center; }
 .play-page .site-header > span { display: none; }
 .play-page .page-content { max-width: 560px; }
 .participant-top h1 { font: 800 1.62rem/1.23 var(--font-display); }
-.participant-panel { border: 1px solid rgba(188,150,230,.34); background: linear-gradient(145deg, rgba(39,19,53,.68), rgba(25,10,35,.72)); backdrop-filter: blur(9px); }
+.participant-panel { border: 1px solid rgba(188,150,204,.32); background: rgba(43,27,50,.87); backdrop-filter: none; }
 .lobby-panel { flex: 0 0 auto; min-height: 280px; margin: auto 0; gap: 8px; }
 .lobby-panel h2 { font: 800 clamp(2rem, 7vw, 2.8rem)/1.25 var(--font-display); margin: 8px 0 0; }
 .lobby-panel > p { margin: 0; }
-.waiting-symbol { width: 124px; height: 124px; display: grid; place-items: center; color: #d8a9f8; border: 1px solid rgba(188,150,230,.34); border-radius: 30px; background: radial-gradient(circle, rgba(188,150,230,.28), rgba(188,150,230,.045) 70%); box-shadow: var(--awwalha-glow); }
+.waiting-symbol { width: 124px; height: 124px; display: grid; place-items: center; color: #e5bee4; border: 1px solid rgba(255,209,102,.24); border-radius: 50%; background: radial-gradient(circle, rgba(255,209,102,.2), rgba(255,209,102,.04) 70%); box-shadow: var(--awwalha-glow); }
 .waiting-symbol svg { width: 70px; height: 70px; fill: rgba(188,150,230,.21); stroke-width: 1.7; }
 .game-panel { border-color: rgba(188,150,230,.28); }
 .game-kicker { font: 800 1.3rem/1.3 var(--font-display); color: #e8c9ff; }
 .game-kicker svg { width: 27px; height: 27px; color: var(--awwalha-gold); }
 .game-panel > p { color: var(--awwalha-muted); }
 .target-number { font-family: var(--font-latin); text-shadow: 0 0 28px rgba(188,150,230,.28); }
-.stop-button { background: radial-gradient(circle at 35% 24%, #f1c1a5, #9c4d91 56%, #482058 88%); border: 7px solid rgba(235,192,255,.34); box-shadow: 0 0 0 8px rgba(188,150,230,.08), 0 0 65px rgba(188,150,230,.29), inset 0 10px 20px rgba(255,255,255,.2), inset 0 -20px 38px rgba(47,13,60,.58); letter-spacing: .04em; }
+.stop-button { background: radial-gradient(circle at 45% 28%, #a780aa, #6f477b 60%, #39213f 95%); border: 7px solid rgba(255,209,102,.58); box-shadow: 0 0 0 7px rgba(255,209,102,.06), 0 0 60px rgba(255,209,102,.17), inset 0 -12px 28px rgba(34,12,40,.32); letter-spacing: .04em; }
 .look-panel .guess-form { max-width: 340px; }
 .look-panel { justify-content: center; gap: clamp(20px, 5vh, 42px); }
 .look-panel > p { margin: 0; color: var(--awwalha-text); font: 800 clamp(1.85rem, 7vw, 2.35rem)/1.3 var(--font-display); }
 .guess-form input { border: 1px solid rgba(188,150,230,.55); background: rgba(21,7,33,.72); box-shadow: inset 0 0 34px rgba(188,150,230,.06); }
 .guess-form .button { min-height: 62px; }
 .submitted-result strong { font-family: var(--font-latin); }
-.taif-ready-screen { background: radial-gradient(circle at center, rgba(166,85,207,.38), transparent 48%), linear-gradient(150deg, #13071b, #341344 70%, #18091e); }
+.taif-ready-screen { background: url('/poster-horizon-mobile.svg') center bottom / min(100vw, 600px) auto no-repeat, linear-gradient(180deg, #29192f, #392541 64%, #27172e); }
 .taif-ready-screen::before { content: ''; position: absolute; width: 93vw; height: 93vw; max-width: 530px; max-height: 530px; border: 2px solid rgba(188,150,230,.22); border-radius: 50%; box-shadow: 0 0 60px rgba(188,150,230,.14), inset 0 0 70px rgba(188,150,230,.08); }
 .taif-ready-brand { width: min(188px, 47vw); top: max(19px, env(safe-area-inset-top)); z-index: 1; }
 .taif-ready-button { position: relative; z-index: 1; }
 
 /* Operator console: larger selectable game identities, existing controls only. */
+.admin-login-page .ambient { background: url('/poster-horizon-mobile.svg') center bottom / min(100vw, 720px) auto no-repeat; opacity: .7; }
+.admin-page { background: radial-gradient(ellipse at 50% 100%, rgba(255,209,102,.09), transparent 40%), linear-gradient(180deg, #291a30, #322039); }
+.admin-page .ambient { display: none; }
 .admin-page .page-content { max-width: 1480px; padding-top: 20px; }
 .admin-heading { margin-bottom: 15px; }
 .admin-heading h1 { font-size: clamp(2rem, 3vw, 3rem); }
@@ -107,9 +105,9 @@ h1, h2, h3, strong { font-synthesis: none; }
 .control-card, .registration-card, .safe-actions { padding: 22px; }
 .control-card > .card-heading { margin-bottom: 14px; }
 .game-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 22px; }
-.game-tabs button { width: auto; height: auto; min-width: 0; min-height: 155px; padding: 16px 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; border-radius: 18px; color: #e8d3ef; border: 1px solid rgba(188,150,230,.28); background: radial-gradient(circle at 50% 10%, rgba(188,150,230,.13), transparent 70%), rgba(25,10,36,.65); transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease; }
+.game-tabs button { width: auto; height: auto; min-width: 0; min-height: 155px; padding: 16px 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; border-radius: 18px; color: #e8d3ef; border: 1px solid rgba(188,150,230,.28); background: rgba(59,38,66,.8); transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease; }
 .game-tabs button:hover { transform: translateY(-3px); border-color: rgba(255,209,102,.5); }
-.game-tabs button.active { border-color: rgba(255,209,102,.65); box-shadow: inset 0 0 0 1px rgba(255,209,102,.14), 0 10px 35px rgba(255,209,102,.09); background: radial-gradient(circle at 50% 12%, rgba(255,209,102,.18), transparent 70%), rgba(42,20,53,.86); }
+.game-tabs button.active { border-color: rgba(255,209,102,.65); box-shadow: inset 0 0 0 1px rgba(255,209,102,.12); background: rgba(92,62,81,.74); }
 .game-tabs svg { width: 44px; height: 44px; color: var(--awwalha-wisteria); stroke-width: 1.6; filter: drop-shadow(0 0 14px rgba(188,150,230,.3)); }
 .game-tabs button.active svg { color: var(--awwalha-gold); }
 .game-tabs strong { font: 800 clamp(1rem, 1.35vw, 1.35rem)/1.3 var(--font-display); color: #fff6ff; text-align: center; }
@@ -117,25 +115,25 @@ h1, h2, h3, strong { font-synthesis: none; }
 .safe-actions { border-color: rgba(188,150,230,.2); }
 .safe-actions button.danger { background: rgba(130,35,52,.1); }
 .admin-login-page .page-content { min-height: calc(100dvh - 74px); }
-.admin-login-card { border-radius: 24px; box-shadow: 0 30px 80px rgba(5,0,12,.35), 0 0 80px rgba(188,150,230,.08); }
+.admin-login-card { border-radius: 24px; box-shadow: 0 30px 80px rgba(22,10,28,.27); }
 
-/* A static scenic layer gives projector views the reference's event-night depth. */
-.stage-page, .taif-stage-ready { isolation: isolate; background: radial-gradient(ellipse at 50% 68%, rgba(111,41,143,.44), transparent 47%), linear-gradient(180deg, #16091f 0%, #210b2c 60%, #17091e 100%); }
-.stage-page::after, .taif-stage-ready::after { content: ''; position: absolute; z-index: 0; inset: 0; pointer-events: none; background: url('/event-scenery.svg') center bottom / cover no-repeat; opacity: .83; }
+/* The projector horizon is static and stays behind all countable objects. */
+.stage-page, .taif-stage-ready { isolation: isolate; background: linear-gradient(180deg, #28192f 0%, #392540 100%); }
+.stage-page::after, .taif-stage-ready::after { content: ''; position: absolute; z-index: 0; inset: 0; pointer-events: none; background: url('/event-scenery.svg') center bottom / cover no-repeat; opacity: 1; }
 .stage-page .ambient { display: none; }
 .stage-header { z-index: 2; }
 .stage-header .wordmark-image { width: clamp(125px, 10vw, 175px); }
 .stage-header > div:last-child { color: #ead9f5; }
 .stage-center, .look-message, .stage-winners { z-index: 2; }
-.stage-hero-icon { width: clamp(100px, 10vw, 174px); height: clamp(100px, 10vw, 174px); color: var(--awwalha-gold); stroke-width: 1.4; filter: drop-shadow(0 0 35px rgba(255,209,102,.55)); margin-bottom: 8px; }
-.stage-game-title { font: 800 clamp(2.8rem, 5.2vw, 6rem)/1.12 var(--font-display); margin: 0 0 16px; color: #fff7ff; text-shadow: 0 0 60px rgba(188,150,230,.45); }
+.stage-hero-icon { width: clamp(100px, 10vw, 174px); height: clamp(100px, 10vw, 174px); color: var(--awwalha-gold); stroke-width: 1.4; filter: drop-shadow(0 0 24px rgba(255,209,102,.28)); margin-bottom: 8px; }
+.stage-game-title { font: 800 clamp(2.8rem, 5.2vw, 6rem)/1.12 var(--font-display); margin: 0 0 16px; color: #ffe2a1; text-shadow: 0 8px 36px rgba(26,11,31,.25); }
 .stage-prompt { font-size: clamp(1.15rem, 1.7vw, 1.5rem); }
 .stage-target { font-size: clamp(5.5rem, 10vw, 10rem); margin: 0 0 8px; }
-.stage-timer { font-size: clamp(3.7rem, 6.5vw, 7rem); background: rgba(28,10,39,.54); backdrop-filter: blur(8px); border-color: rgba(188,150,230,.42); box-shadow: 0 0 80px rgba(188,150,230,.12); }
+.stage-timer { font-size: clamp(3.7rem, 6.5vw, 7rem); background: rgba(43,26,50,.88); backdrop-filter: none; border-color: rgba(188,150,230,.32); box-shadow: 0 15px 45px rgba(22,8,28,.18); }
 .stage-footer { z-index: 2; border-top: 1px solid rgba(188,150,230,.18); padding-top: 14px; }
-.look-stage .look-field-wrap { background: radial-gradient(circle at center, rgba(63,29,84,.72), rgba(23,8,32,.86)); backdrop-filter: blur(4px); border: 1px solid rgba(188,150,230,.4); }
+.look-stage .look-field-wrap { background: rgba(42,25,50,.97); backdrop-filter: none; border: 1px solid rgba(188,150,230,.4); }
 .look-stage .visual-item { filter: drop-shadow(0 5px 10px rgba(0,0,0,.5)); }
-.taif-stage-ready::after { opacity: .9; }
+.taif-stage-ready::after { opacity: 1; }
 .taif-stage-ready > * { position: relative; z-index: 2; }
 .taif-stage-brand { position: absolute; top: clamp(20px, 3vw, 50px); right: 50%; transform: translateX(50%); width: clamp(140px, 11vw, 200px); }
 .taif-stage-orb { width: clamp(105px, 11vw, 190px); height: clamp(105px, 11vw, 190px); display: grid; place-items: center; color: #d7a5f5; background: radial-gradient(circle, rgba(188,150,230,.23), rgba(188,150,230,.04) 67%, transparent 69%); box-shadow: 0 0 85px rgba(188,150,230,.36); }
