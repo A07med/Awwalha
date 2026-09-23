@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ParticipantSession, PublicEventState, TaifColor } from '../types'
 import { joinTaifRound } from '../lib/api'
+import logoUrl from '../assets/awwalha-logo.svg'
 
 type ReadyStatus = 'idle' | 'submitting' | 'ready' | 'failed'
 
@@ -54,7 +55,7 @@ export function TaifScreen({ state, session, elapsedMs, onReadyChange }: { state
 
   const rosterLocked = round.phase !== 'preparing'
   return <main className="taif-ready-screen" data-taif-ready={rosterLocked ? 'locked' : status}>
-    <img className="taif-ready-brand" src="/awwalha-wordmark.svg" alt="أولها" />
+    <img className="taif-ready-brand" src={logoUrl} alt="أولها" />
     {!rosterLocked && (status === 'idle' || status === 'failed')
       ? <button type="button" className="taif-ready-button" onPointerDown={() => void ready()} onClick={() => void ready()}>مستعد</button>
       : <span className="taif-ready-pulse" aria-label="جاهز" />}

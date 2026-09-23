@@ -1,9 +1,9 @@
+import logoUrl from '../assets/awwalha-logo.svg'
+
 export function Wordmark({ compact = false }: { compact?: boolean }) {
   return (
     <div className="wordmark" aria-label="أولها">
-      <img className="wordmark-mark" src="/awwalha-mark.svg" alt="" aria-hidden="true" width="48" height="48" />
-      <span className={compact ? 'wordmark-text small' : 'wordmark-text'}>أولها</span>
-      {!compact && <span className="wordmark-en">AWWALHA · LIVE</span>}
+      <img className={compact ? 'wordmark-image compact' : 'wordmark-image'} src={logoUrl} alt="" aria-hidden="true" width="310" height="145" />
     </div>
   )
 }

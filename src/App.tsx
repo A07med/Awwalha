@@ -6,12 +6,12 @@ import { PlayPage } from './pages/play'
 import { StageFirstLookPage } from './pages/stage-first-look'
 import { StagePerfectPage } from './pages/stage-perfect'
 import { StageTaifPage } from './pages/stage-taif'
-import { LandingPage } from './pages/landing'
 import { AdminGuard } from './components/admin-guard'
+import { readSession } from './lib/session'
 
 export default function App() {
   return <Routes>
-    <Route path="/" element={<LandingPage />} />
+    <Route path="/" element={<Navigate to={readSession() ? '/play' : '/join'} replace />} />
     <Route path="/join" element={<JoinPage />} />
     <Route path="/play" element={<PlayPage />} />
     <Route path="/admin/login" element={<AdminLoginPage />} />

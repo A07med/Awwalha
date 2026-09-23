@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Check, Clock3, Eye, Sparkles, Trophy } from 'lucide-react'
+import { Check, Clock3, Eye, Sparkles, Trophy, UsersRound } from 'lucide-react'
 import { PageShell } from '../components/page-shell'
 import { Button, Card, StatusPill } from '../components/ui'
 import { usePublicState, useTaifRevealRefresh } from '../hooks/use-public-state'
@@ -194,7 +194,7 @@ export function PlayPage() {
     {winner ? <Card className="participant-panel result-panel winner-panel" aria-live="polite"><span className="result-emoji" aria-hidden="true">🎉</span><Trophy /><p className="eyebrow">النتيجة النهائية</p><h2>أنت من الفائزين</h2><p>اسمك الآن على الشاشة الكبيرة.</p></Card>
     : revealedWithoutWin ? <Card className="participant-panel result-panel" aria-live="polite"><Sparkles /><p className="eyebrow">انتهت الجولة</p><h2>شكرًا لمشاركتك</h2><p>خلك قريب — الجولة القادمة قد تكون لك.</p></Card>
     : isTieSpectator ? <Card className="participant-panel result-panel tie-spectator" aria-live="polite"><Sparkles /><p className="eyebrow">تعادل</p><h2>جولة فاصلة جارية</h2><p>تابع الشاشة — هذه الجولة للمشاركين المتعادلين.</p></Card>
-    : !round ? <Card className="participant-panel lobby-panel"><span className="pulse-orbit"><span /></span><p className="eyebrow">أنت داخل</p><h2>انتظر بداية الجولة ✨</h2><p>بتظهر الجولة هنا تلقائيًا. لا تحتاج تحدث الصفحة.</p></Card>
+    : !round ? <Card className="participant-panel lobby-panel"><div className="waiting-symbol" aria-hidden="true"><UsersRound /></div><h2>بانتظار بدء اللعبة...</h2><p>ابقَ على هذه الصفحة، ستبدأ الجولة هنا تلقائيًا ✨</p></Card>
     : round.gameType === 'perfect_second' ? <Card className="participant-panel game-panel perfect-panel">
       {isTieEligible && <div className="tie-break-callout"><strong>تعادل!</strong><span>أنت داخل الجولة الفاصلة</span></div>}
       <div className="game-kicker"><Clock3 /> الثانية المثالية</div>

@@ -2,6 +2,8 @@ import { usePublicState, useTaifRevealRefresh } from '../hooks/use-public-state'
 import { useScheduledClock } from '../hooks/use-scheduled-clock'
 import { useClockSync } from '../hooks/use-clock-sync'
 import { demoLobbyState, demoTaifState } from '../lib/demo-state'
+import logoUrl from '../assets/awwalha-logo.svg'
+import { TaifMark } from '../components/taif-mark'
 
 export function StageTaifPage() {
   const initialState = import.meta.env.VITE_APP_MODE === 'supabase' ? demoLobbyState : demoTaifState
@@ -17,5 +19,5 @@ export function StageTaifPage() {
 
   if (revealed) return <main className="taif-stage-final" dir="rtl"><h1>لدينا ٤ فائزين</h1></main>
   if (active) return <main className="taif-stage-active" aria-label="طيف" />
-  return <main className="taif-stage-ready" dir="rtl"><img className="taif-stage-brand" src="/awwalha-wordmark.svg" alt="أولها" /><div className="taif-stage-orb" /><p>أولها تقدم</p><h1>طَيْف</h1><strong>{state.submittedCount} مستعد</strong></main>
+  return <main className="taif-stage-ready" dir="rtl"><img className="taif-stage-brand" src={logoUrl} alt="أولها" /><div className="taif-stage-orb"><TaifMark /></div><h1>طَيْف</h1><strong>{state.submittedCount} مستعد</strong></main>
 }

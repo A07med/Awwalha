@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { ArrowLeft, Check, KeyRound, Phone, UserRound } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { PageShell } from '../components/page-shell'
+import { Wordmark } from '../components/brand'
 import { Button, Card } from '../components/ui'
 import { recoverParticipant, registerParticipant } from '../lib/api'
 import { saveSession } from '../lib/session'
@@ -46,7 +47,8 @@ export function JoinPage() {
     }
   }
 
-  if (recoveryCode) return <PageShell className="join-page">
+  if (recoveryCode) return <PageShell className="join-page" header={false}>
+    <div className="join-brand"><Wordmark /><span>A W W A L H A</span></div>
     <Card className="join-card success-card">
       <span className="success-icon"><Check /></span>
       <p className="eyebrow">تم تسجيلك</p>
@@ -57,11 +59,11 @@ export function JoinPage() {
     </Card>
   </PageShell>
 
-  return <PageShell className="join-page">
+  return <PageShell className="join-page" header={false}>
+    <div className="join-brand"><Wordmark /><span>PEOPLE · GAMES · MOMENTS</span></div>
     <section className="join-intro">
-      <p className="eyebrow">أول لحظة · أول حكاية</p>
-      <h1>جاهز تكون<br /><em>أولها؟</em></h1>
-      <p>سجّل مرة واحدة، وخلك على نفس الصفحة طول الأمسية.</p>
+      <h1>انضم إلى التجربة</h1>
+      <p>كُن جزءًا من لحظات لا تُنسى</p>
     </section>
     <Card className="join-card">
       <div className="segmented" role="tablist" aria-label="طريقة الدخول">
@@ -73,7 +75,7 @@ export function JoinPage() {
         <label><span>رقم الهاتف</span><div className="input-wrap"><Phone /><input dir="ltr" type="tel" inputMode="tel" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="9XXX XXXX" autoComplete="tel" enterKeyHint={mode === 'join' ? 'done' : 'next'} required /></div></label>
         {mode === 'recover' && <label><span>رمز الدخول</span><div className="input-wrap"><KeyRound /><input dir="ltr" type="text" value={code} onChange={(event) => setCode(event.target.value.toUpperCase())} placeholder="XXXX-XXXX" autoComplete="one-time-code" autoCapitalize="characters" spellCheck={false} enterKeyHint="done" required /></div></label>}
         {error && <p className="form-error" role="alert">{error}</p>}
-        <Button type="submit" disabled={busy}>{busy ? 'لحظة…' : mode === 'join' ? 'سجّلني' : 'استرجاع الدخول'} <ArrowLeft size={20} /></Button>
+        <Button type="submit" disabled={busy}>{busy ? 'لحظة…' : mode === 'join' ? 'انضم الآن' : 'استرجاع الدخول'} <ArrowLeft size={20} /></Button>
       </form>
       <p className="privacy-note">نستخدم رقمك للتسجيل فقط، ولا يظهر لأي مشارك.</p>
     </Card>

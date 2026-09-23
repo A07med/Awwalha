@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import QRCode from 'qrcode'
-import { Copy, Download, Eye, Gauge, Palette, Play, RotateCcw, Settings2, ShieldCheck, TimerReset, Trash2, UsersRound } from 'lucide-react'
+import { Copy, Download, Eye, Gauge, Play, RotateCcw, Settings2, ShieldCheck, TimerReset, Trash2, UsersRound } from 'lucide-react'
 import { PageShell } from '../components/page-shell'
 import { Button, Card, Metric, StatusPill } from '../components/ui'
+import { TaifMark } from '../components/taif-mark'
 import { demoLobbyState } from '../lib/demo-state'
 import { usePublicState } from '../hooks/use-public-state'
 import { adminClearRegistrations, adminCloseRound, adminPrepareRound, adminPrepareTaif, adminResetGames, adminRevealWinners, adminSetRegistration, adminStartTaif, adminStartTieBreak, adminResolveRound } from '../lib/api'
@@ -50,7 +51,12 @@ export function AdminPage() {
     <section className="system-strip"><div className="system-title"><Gauge /><div><strong>حالة النظام</strong><span>جاهز · بدون اتصالات لحظية للجمهور</span></div></div><Metric label="المسجلون" value={state.registeredCount} accent /><Metric label="اللعبة الحالية" value="الردهة" /><Metric label="المرحلة" value="جاهز" /></section>
     <div className="admin-grid">
       <Card className="control-card">
-        <div className="card-heading"><div><p className="eyebrow">الجولة التالية</p><h2>{tab === 'perfect' ? 'الثانية المثالية' : tab === 'look' ? 'أول نظرة' : 'طَيْف'}</h2></div><div className="game-tabs"><button aria-label="الثانية المثالية" className={tab === 'perfect' ? 'active' : ''} onClick={() => setTab('perfect')}><TimerReset /></button><button aria-label="أول نظرة" className={tab === 'look' ? 'active' : ''} onClick={() => setTab('look')}><Eye /></button><button aria-label="طيف" className={tab === 'taif' ? 'active' : ''} onClick={() => setTab('taif')}><Palette /></button></div></div>
+        <div className="card-heading"><div><p className="eyebrow">الجولة التالية</p><h2>{tab === 'perfect' ? 'الثانية المثالية' : tab === 'look' ? 'أول نظرة' : 'طَيْف'}</h2></div></div>
+        <div className="game-tabs" role="group" aria-label="اختيار اللعبة">
+          <button aria-label="الثانية المثالية" aria-pressed={tab === 'perfect'} className={tab === 'perfect' ? 'active' : ''} onClick={() => setTab('perfect')}><TimerReset /><strong>الثانية المثالية</strong><small>التوقيت هو كل شيء</small></button>
+          <button aria-label="أول نظرة" aria-pressed={tab === 'look'} className={tab === 'look' ? 'active' : ''} onClick={() => setTab('look')}><Eye /><strong>أول نظرة</strong><small>لاحظ… واكتشف</small></button>
+          <button aria-label="طيف" aria-pressed={tab === 'taif'} className={tab === 'taif' ? 'active' : ''} onClick={() => setTab('taif')}><TaifMark /><strong>طَيْف</strong><small>دع اللون يختار</small></button>
+        </div>
         {tab === 'taif' ? <div className="taif-admin-flow">
           <div className="taif-fixed-winners"><span>الفائزون ثابتون</span><strong>٤</strong><small>٢ أخضر فاتح · ٢ أصفر فاتح</small></div>
           {!taifRound ? <Button className="prepare-button" onClick={prepareRound}>فتح الاستعداد <Play size={18} /></Button>

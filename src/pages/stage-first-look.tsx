@@ -24,9 +24,9 @@ export function StageFirstLookPage() {
   const visualCount = privateRound?.correctCount ?? 36
   return <main className="stage-page look-stage" dir="rtl"><AmbientBackground /><header className="stage-header"><Wordmark /><div><StatusPill tone="gold"><Eye size={16} /> أول نظرة</StatusPill><span>ركز… عندك لحظتان فقط</span></div></header>
     {state.phase === 'revealed' && state.winners.length ? <section className="stage-winners"><p className="eyebrow">أدق الملاحظات</p><h1>الفائزون</h1><WinnerGrid winners={state.winners} game="first_look" /></section>
-    : countdown ? <section className="look-message"><p>ركز</p><strong>{countdown}</strong></section>
+    : countdown ? <section className="look-message"><Eye className="stage-hero-icon" aria-hidden="true" /><h1 className="stage-game-title">أول نظرة</h1><p>ركز</p><strong>{countdown}</strong></section>
     : show || import.meta.env.VITE_APP_MODE !== 'supabase' ? <section className="look-field-wrap"><VisualField seed={privateRound?.visualSeed ?? round?.visualSeed ?? 90731} count={visualCount} category={privateRound?.visualCategory ?? round?.visualCategory ?? 'leaves'} /><span className="look-hint">عدّها بنظرة واحدة</span></section>
-    : <section className="look-message"><Eye /><p>كم كانوا؟</p><strong>؟</strong></section>}
+    : <section className="look-message"><Eye className="stage-hero-icon" aria-hidden="true" /><h1 className="stage-game-title">أول نظرة</h1><p>كم كانوا؟</p><strong>؟</strong></section>}
     <footer className="stage-footer"><span><UsersRound /> {state.registeredCount} مشاركًا</span><span className="submission-progress"><i style={{ width: Math.min(100, state.submittedCount / Math.max(1, state.registeredCount) * 100) + '%' }} /></span><strong>{state.submittedCount} إجابة</strong></footer>
   </main>
 }
