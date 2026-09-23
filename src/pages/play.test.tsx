@@ -12,7 +12,8 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('../hooks/use-public-state', () => ({
-  usePublicState: () => ({ state: mocks.state, error: null, refresh: vi.fn(), setState: vi.fn() }),
+  usePublicState: () => ({ state: mocks.state, error: null, refresh: vi.fn(), refreshAtTaifReveal: vi.fn(), setState: vi.fn() }),
+  useTaifRevealRefresh: vi.fn(),
 }))
 vi.mock('../hooks/use-clock-sync', () => ({ useClockSync: () => 0 }))
 vi.mock('../hooks/use-scheduled-clock', () => ({ useScheduledClock: () => ({ elapsedMs: mocks.elapsedMs }) }))

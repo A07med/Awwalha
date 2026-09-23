@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Check, Clock3, Eye, Sparkles, Trophy } from 'lucide-react'
 import { PageShell } from '../components/page-shell'
 import { Button, Card, StatusPill } from '../components/ui'
-import { usePublicState } from '../hooks/use-public-state'
+import { usePublicState, useTaifRevealRefresh } from '../hooks/use-public-state'
 import { useScheduledClock } from '../hooks/use-scheduled-clock'
 import { demoLobbyState, demoPerfectState } from '../lib/demo-state'
 import { submitFirstLook, submitPerfectSecond } from '../lib/api'
@@ -99,14 +99,16 @@ export function PlayPage() {
   // Never let the live app's illustrative active round block its first real
   // state request on a slow connection.
   const initialState = import.meta.env.VITE_APP_MODE === 'supabase' ? demoLobbyState : demoPerfectState
-  const { state } = usePublicState({ submitted, timingCritical, taifReady }, initialState)
+  const { state, refreshAtTaifReveal } = usePublicState({ submitted, timingCritical, taifReady }, initialState)
   const round = state.round
   const currentRoundIdRef = useRef<string | null>(round?.id ?? null)
   currentRoundIdRef.current = round?.id ?? null
   const offsetMs = useClockSync(Boolean(round?.startsAt))
   const { elapsedMs } = useScheduledClock(round?.startsAt, offsetMs)
   const active = round?.phase === 'active' && elapsedMs >= 0
-  useEffect(() => setTimingCritical(Boolean(active && !submitted)), [active, submitted])
+  const taifRevealElapsedMs = round?.revealAt && round.startsAt ? Date.parse(round.revealAt) - Date.parse(round.startsAt) : 6000
+  useTaifRevealRefresh(round?.gameType === 'taif' && active && elapsedMs >= taifRevealElapsedMs && state.taifWinners.length !== 4 ? round.id : null, refreshAtTaifReveal)
+  useEffect(() => setTimingCritical(Boolean(active && !submitted && round?.gameType !== 'taif')), [active, submitted, round?.gameType])
   useEffect(() => {
     const stored = readStoredSubmission(session.participantPublicId)
     if (round && stored.status !== 'idle' && stored.attempt.roundId === round.id) {

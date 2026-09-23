@@ -15,34 +15,50 @@ export function usePublicState(options: PollOptions = {}, demoState = demoLobbyS
   const [state, setState] = useState<PublicEventState>(demoState)
   const [error, setError] = useState<string | null>(null)
   const requestRef = useRef<AbortController | null>(null)
+  const inFlightRef = useRef<Promise<void> | null>(null)
+  const lastFetchedRef = useRef<PublicEventState | null>(null)
   const timerRef = useRef<number | null>(null)
   const failureRef = useRef(0)
   const optionsRef = useRef(options)
   const hydratedRef = useRef(false)
   optionsRef.current = options
 
-  const refresh = useCallback(async () => {
-    if (demo || document.hidden || requestRef.current || optionsRef.current.timingCritical) return
+  const refresh = useCallback((): Promise<void> => {
+    if (demo || document.hidden || optionsRef.current.timingCritical) return Promise.resolve()
+    if (inFlightRef.current) return inFlightRef.current
     const controller = new AbortController()
     requestRef.current = controller
-    try {
-      const next = await fetchPublicState(controller.signal)
-      setState((current) => {
-        if (!hydratedRef.current || next.stateVersion > current.stateVersion) return next
-        return current
-      })
-      hydratedRef.current = true
-      failureRef.current = 0
-      setError(null)
-    } catch (reason) {
-      if (!(reason instanceof DOMException && reason.name === 'AbortError')) {
-        failureRef.current += 1
-        setError(reason instanceof Error ? reason.message : 'تعذر التحديث')
+    const pending = (async () => {
+      try {
+        const next = await fetchPublicState(controller.signal)
+        lastFetchedRef.current = next
+        setState((current) => {
+          if (!hydratedRef.current || next.stateVersion > current.stateVersion) return next
+          return current
+        })
+        hydratedRef.current = true
+        failureRef.current = 0
+        setError(null)
+      } catch (reason) {
+        if (!(reason instanceof DOMException && reason.name === 'AbortError')) {
+          failureRef.current += 1
+          setError(reason instanceof Error ? reason.message : 'تعذر التحديث')
+        }
+      } finally {
+        requestRef.current = null
+        inFlightRef.current = null
       }
-    } finally {
-      requestRef.current = null
-    }
+    })()
+    inFlightRef.current = pending
+    return pending
   }, [demo])
+
+  const refreshAtTaifReveal = useCallback(async (roundId: string) => {
+    if (inFlightRef.current) await inFlightRef.current
+    const latest = lastFetchedRef.current
+    if (latest?.round?.id === roundId && latest.taifWinners.length === 4) return
+    await refresh()
+  }, [refresh])
 
   useEffect(() => {
     if (demo || options.active === false || options.timingCritical) return
@@ -52,7 +68,11 @@ export function usePublicState(options: PollOptions = {}, demoState = demoLobbyS
       timerRef.current = window.setTimeout(async () => {
         await refresh()
         schedule()
-      }, pollingDelay(optionsRef.current, failureRef.current))
+      }, pollingDelay({
+        ...optionsRef.current,
+        taifReady: optionsRef.current.taifReady ||
+          (lastFetchedRef.current?.currentGame === 'taif' && lastFetchedRef.current.round?.phase === 'active'),
+      }, failureRef.current))
     }
     void refresh().finally(schedule)
     const onVisibility = () => {
@@ -73,5 +93,15 @@ export function usePublicState(options: PollOptions = {}, demoState = demoLobbyS
     }
   }, [demo, options.active, options.timingCritical, refresh])
 
-  return { state, error, refresh, setState }
+  return { state, error, refresh, refreshAtTaifReveal, setState }
+}
+
+export function useTaifRevealRefresh(roundId: string | null, refresh: (roundId: string) => Promise<void>) {
+  const refreshRef = useRef(refresh)
+  refreshRef.current = refresh
+  useEffect(() => {
+    if (!roundId) return
+    const timer = window.setTimeout(() => { void refreshRef.current(roundId) }, Math.random() * 300)
+    return () => window.clearTimeout(timer)
+  }, [roundId])
 }

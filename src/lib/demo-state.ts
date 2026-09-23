@@ -79,4 +79,10 @@ export const demoTaifState: PublicEventState = {
     seatsAvailable: 4,
   },
   submittedCount: 483,
+  taifWinners: [
+    { participantPublicId: 'demo-green-1', color: 'green' },
+    { participantPublicId: 'demo-green-2', color: 'green' },
+    { participantPublicId: 'demo-yellow-1', color: 'yellow' },
+    { participantPublicId: 'demo-yellow-2', color: 'yellow' },
+  ],
 }

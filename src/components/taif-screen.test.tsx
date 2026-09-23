@@ -49,10 +49,24 @@ describe('Taif participant experience', () => {
     expect(container.querySelector('[data-taif-phase="active"]')).toBeInTheDocument()
   })
 
+  it('does not expose a result before reveal time even if assignments arrive early', () => {
+    const { container } = render(<TaifScreen state={state('active', demoTaifState.taifWinners)} session={session} elapsedMs={5900} onReadyChange={vi.fn()} />)
+    expect(container.querySelector('[data-taif-phase="active"]')).toBeInTheDocument()
+    expect(container.querySelector('[data-taif-color]')).not.toBeInTheDocument()
+  })
+
+  it('keeps animating past reveal time until all four assignments arrive, without briefly showing white', () => {
+    const view = render(<TaifScreen state={state('active')} session={session} elapsedMs={7000} onReadyChange={vi.fn()} />)
+    expect(view.container.querySelector('[data-taif-phase="active"]')).toBeInTheDocument()
+    expect(view.container.querySelector('.taif-white')).not.toBeInTheDocument()
+    view.rerender(<TaifScreen state={state('active', demoTaifState.taifWinners)} session={session} elapsedMs={7100} onReadyChange={vi.fn()} />)
+    expect(view.container.querySelector('[data-taif-color="white"]')).toBeInTheDocument()
+  })
+
   it.each([
-    ['white', []],
-    ['green', [{ participantPublicId: session.participantPublicId, color: 'green' as const }]],
-    ['yellow', [{ participantPublicId: session.participantPublicId, color: 'yellow' as const }]],
+    ['white', demoTaifState.taifWinners],
+    ['green', [{ participantPublicId: session.participantPublicId, color: 'green' as const }, ...demoTaifState.taifWinners.slice(1)]],
+    ['yellow', [{ participantPublicId: session.participantPublicId, color: 'yellow' as const }, ...demoTaifState.taifWinners.slice(1)]],
   ])('reveals a full-screen %s result without text', (color, winners) => {
     const { container } = render(<TaifScreen state={state('active', winners)} session={session} elapsedMs={7000} onReadyChange={vi.fn()} />)
     expect(container.textContent).toBe('')

@@ -42,7 +42,7 @@ export function TaifScreen({ state, session, elapsedMs, onReadyChange }: { state
 
   const revealElapsedMs = round.revealAt && round.startsAt ? Date.parse(round.revealAt) - Date.parse(round.startsAt) : 6000
   if (round.phase === 'active' && elapsedMs >= 0) {
-    const revealed = elapsedMs >= revealElapsedMs
+    const revealed = elapsedMs >= revealElapsedMs && state.taifWinners.length === 4
     const color = revealed ? taifFinalColor(state, session.participantPublicId) : null
     return <main
       className={`taif-viewport ${revealed ? `taif-result taif-${color}` : 'taif-active'}`}

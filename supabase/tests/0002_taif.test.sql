@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(32);
+select plan(38);
 
 select is((select count(*)::integer from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public' and c.relname in ('taif_ready','taif_winners') and c.relrowsecurity), 2, 'RLS enabled on Taif tables');
 select has_function('public', 'join_taif_round', array['text','uuid'], 'Taif ready RPC exists');
@@ -52,8 +52,22 @@ select is((select public.admin_start_taif((select (value->>'roundId')::uuid from
 select is((select jsonb_agg(jsonb_build_object('participant', participant_id, 'position', position, 'color', color) order by position) from public.taif_winners), (select value from taif_winner_snapshot), 'second Start does not change winners');
 select throws_ok(format('select public.join_taif_round(%L, %L)', (select token from taif_people where n = 5), (select value->>'roundId' from taif_round)), '22023', 'ready_closed', 'ready closes after Start');
 
+create temporary table taif_public_before as select public.public_event_state() as value;
+select is((select jsonb_array_length(value->'taifWinners') from taif_public_before), 0, 'Taif assignments remain private before revealAt');
+select ok((select value::text not like '%displayName%' from taif_public_before), 'pre-reveal payload exposes no winner names');
+select ok((select value::text not like '%phone%' from taif_public_before), 'pre-reveal payload exposes no phone data');
+
+update public.game_rounds
+set starts_at = statement_timestamp() - interval '7 seconds',
+    reveal_at = statement_timestamp() - interval '1 second',
+    closes_at = statement_timestamp() - interval '1 second'
+where id = (select (value->>'roundId')::uuid from taif_round);
+
 create temporary table taif_public as select public.public_event_state() as value;
+select ok((select (value->>'stateVersion')::bigint from taif_public) > (select (value->>'stateVersion')::bigint from taif_public_before), 'state version advances at Taif reveal for cached clients');
 select is((select jsonb_array_length(value->'taifWinners') from taif_public), 4, 'public state contains four opaque Taif assignments');
+select is((select count(*) from taif_public, jsonb_array_elements(value->'taifWinners') item where item->>'color' = 'green'), 2::bigint, 'public state contains two green winners');
+select is((select count(*) from taif_public, jsonb_array_elements(value->'taifWinners') item where item->>'color' = 'yellow'), 2::bigint, 'public state contains two yellow winners');
 select is((select count(*) from taif_public, jsonb_array_elements(value->'taifWinners') item, jsonb_object_keys(item) key where key not in ('participantPublicId','color')), 0::bigint, 'Taif public winner objects contain only public ID and color');
 select ok((select value::text not like '%displayName%' from taif_public), 'Taif payload exposes no winner names');
 select ok((select value::text not like '%phone%' from taif_public), 'Taif payload exposes no phone data');
