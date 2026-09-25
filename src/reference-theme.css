@@ -29,7 +29,7 @@ h1, h2, h3, strong { font-synthesis: none; }
 .wordmark-image { display: block; width: clamp(126px, 11vw, 176px); height: auto; filter: drop-shadow(0 8px 24px rgba(255,209,102,.12)); }
 .wordmark-image.compact { width: 94px; }
 .site-header { border-bottom: 0; min-height: 74px; }
-.page-shell { isolation: isolate; background: linear-gradient(180deg, #28182e, #36233d 56%, #24142b); }
+.page-shell { isolation: isolate; background: linear-gradient(180deg, #302039, #35233f 58%, #29182e); }
 .page-shell::before { opacity: .04; }
 .ambient { z-index: 0; opacity: 1; }
 .ambient::after, .ambient span { display: none; }
@@ -41,8 +41,8 @@ h1, h2, h3, strong { font-synthesis: none; }
 .status-pill { background: rgba(188,150,230,.12); }
 
 /* Registration is one centered mobile composition, with recovery in place. */
-.join-page { background: linear-gradient(180deg, #29192f, #392541 64%, #27172e); }
-.join-page .ambient { background: url('/poster-horizon-mobile.svg') center bottom / min(100vw, 720px) auto no-repeat; }
+.join-page { background: linear-gradient(180deg, #302039, #372441 64%, #29182e); }
+.join-page .ambient { background: url('/poster-horizon.png') center bottom / min(100vw, 650px) auto no-repeat; }
 .join-page .page-content { width: min(100%, 480px); max-width: 480px; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 0; padding: max(24px, env(safe-area-inset-top)) 22px max(22px, env(safe-area-inset-bottom)); }
 .join-brand { position: relative; z-index: 1; display: grid; justify-items: center; margin-bottom: 6px; }
 .join-brand .wordmark-image { width: clamp(138px, 32vw, 190px); }
@@ -63,8 +63,8 @@ h1, h2, h3, strong { font-synthesis: none; }
 .success-card h1 { font-family: var(--font-display); }
 
 /* Participant surfaces remain single-purpose, never game selection. */
-.play-page { background: linear-gradient(180deg, #28192f, #382440 65%, #26162c); }
-.play-page .ambient { background: url('/poster-horizon-mobile.svg') center bottom / min(100vw, 600px) auto no-repeat; opacity: .42; }
+.play-page { background: linear-gradient(180deg, #302039, #372441 65%, #29182e); }
+.play-page .ambient { background: url('/poster-horizon.png') center bottom / min(100vw, 600px) auto no-repeat; opacity: .35; }
 .play-page .site-header { justify-content: center; }
 .play-page .site-header > span { display: none; }
 .play-page .page-content { max-width: 560px; }
@@ -87,15 +87,15 @@ h1, h2, h3, strong { font-synthesis: none; }
 .guess-form input { border: 1px solid rgba(188,150,230,.55); background: rgba(21,7,33,.72); box-shadow: inset 0 0 34px rgba(188,150,230,.06); }
 .guess-form .button { min-height: 62px; }
 .submitted-result strong { font-family: var(--font-latin); }
-.taif-ready-screen { background: url('/poster-horizon-mobile.svg') center bottom / min(100vw, 600px) auto no-repeat, linear-gradient(180deg, #29192f, #392541 64%, #27172e); }
+.taif-ready-screen { background: url('/poster-horizon.png') center bottom / min(100vw, 600px) auto no-repeat, linear-gradient(180deg, #302039, #372441 64%, #29182e); }
 .taif-ready-screen::before { content: ''; position: absolute; width: 93vw; height: 93vw; max-width: 530px; max-height: 530px; border: 2px solid rgba(188,150,230,.22); border-radius: 50%; box-shadow: 0 0 60px rgba(188,150,230,.14), inset 0 0 70px rgba(188,150,230,.08); }
 .taif-ready-brand { width: min(188px, 47vw); top: max(19px, env(safe-area-inset-top)); z-index: 1; }
 .taif-ready-button { position: relative; z-index: 1; }
 
 /* Operator console: larger selectable game identities, existing controls only. */
-.admin-login-page .ambient { background: url('/poster-horizon-mobile.svg') center bottom / min(100vw, 720px) auto no-repeat; opacity: .7; }
-.admin-page { background: radial-gradient(ellipse at 50% 100%, rgba(255,209,102,.09), transparent 40%), linear-gradient(180deg, #291a30, #322039); }
-.admin-page .ambient { display: none; }
+.admin-login-page .ambient { background: url('/poster-horizon.png') center bottom / min(100vw, 650px) auto no-repeat; opacity: .7; }
+.admin-page { background: linear-gradient(180deg, #302039, #35233f); }
+.admin-page .ambient { display: block; background: url('/poster-horizon.png') right bottom / min(34vw, 360px) auto no-repeat; opacity: .13; }
 .admin-page .page-content { max-width: 1480px; padding-top: 20px; }
 .admin-heading { margin-bottom: 15px; }
 .admin-heading h1 { font-size: clamp(2rem, 3vw, 3rem); }
@@ -118,8 +118,8 @@ h1, h2, h3, strong { font-synthesis: none; }
 .admin-login-card { border-radius: 24px; box-shadow: 0 30px 80px rgba(22,10,28,.27); }
 
 /* The projector horizon is static and stays behind all countable objects. */
-.stage-page, .taif-stage-ready { isolation: isolate; background: linear-gradient(180deg, #28192f 0%, #392540 100%); }
-.stage-page::after, .taif-stage-ready::after { content: ''; position: absolute; z-index: 0; inset: 0; pointer-events: none; background: url('/event-scenery.svg') center bottom / cover no-repeat; opacity: 1; }
+.stage-page, .taif-stage-ready { isolation: isolate; background: linear-gradient(180deg, #302039 0%, #392540 100%); }
+.stage-page::after, .taif-stage-ready::after { content: ''; position: absolute; z-index: 0; inset: 0; pointer-events: none; background: url('/poster-horizon.png') right bottom / min(60vw, 1050px) auto no-repeat; opacity: .85; mask-image: linear-gradient(to right, transparent 58%, #000 78%), linear-gradient(to bottom, transparent 12%, #000 48%); mask-composite: intersect; }
 .stage-page .ambient { display: none; }
 .stage-header { z-index: 2; }
 .stage-header .wordmark-image { width: clamp(125px, 10vw, 175px); }
@@ -173,6 +173,13 @@ h1, h2, h3, strong { font-synthesis: none; }
   .game-tabs small { display: none; }
 }
 @media (max-width: 360px) and (max-height: 650px) {
+  .admin-login-page .wordmark-image.compact { width: 70px; }
+  .play-page .wordmark-image.compact { width: 70px; }
+  .admin-login-page .page-content { min-height: calc(100dvh - 76px); padding-top: 4px; padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+  .admin-login-card { padding: 20px; }
+  .admin-login-card h1 { font-size: 1.8rem; margin-bottom: 12px; }
+  .admin-login-card form { gap: 9px; }
+  .login-lock { width: 44px; height: 44px; margin-bottom: 10px; }
   .join-brand { margin-bottom: 0; }
   .join-brand .wordmark-image { width: 106px; }
   .join-brand > span { display: none; }
