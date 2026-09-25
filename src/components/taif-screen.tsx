@@ -49,7 +49,7 @@ export function TaifScreen({ state, session, elapsedMs, onReadyChange }: { state
       className={`taif-viewport ${revealed ? `taif-result taif-${color}` : 'taif-active'}`}
       data-taif-phase={revealed ? 'revealed' : 'active'}
       data-taif-color={color ?? undefined}
-      aria-label={revealed ? 'نتيجة طيف' : 'ألوان طيف'}
+      aria-label={revealed ? 'نتيجة وَهَج' : 'ألوان وَهَج'}
     />
   }
 

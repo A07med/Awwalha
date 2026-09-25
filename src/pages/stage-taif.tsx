@@ -18,6 +18,6 @@ export function StageTaifPage() {
   const revealed = revealDue && state.taifWinners.length === 4
 
   if (revealed) return <main className="taif-stage-final" dir="rtl"><h1>لدينا ٤ فائزين</h1></main>
-  if (active) return <main className="taif-stage-active" aria-label="طيف" />
-  return <main className="taif-stage-ready" dir="rtl"><img className="taif-stage-brand" src={logoUrl} alt="أولها" /><div className="taif-stage-orb"><TaifMark /></div><h1>طَيْف</h1><strong>{state.submittedCount} مستعد</strong></main>
+  if (active) return <main className="taif-stage-active" aria-label="وَهَج" />
+  return <main className="taif-stage-ready" dir="rtl"><img className="taif-stage-brand" src={logoUrl} alt="أولها" /><div className="taif-stage-orb"><TaifMark /></div><h1>وَهَج</h1><strong>{state.submittedCount} مستعد</strong></main>
 }

@@ -30,7 +30,7 @@ export function AdminPage() {
   }
   async function prepareRound() {
     if (tab === 'taif') {
-      await act(adminPrepareTaif, 'تم فتح الاستعداد لطَيْف')
+      await act(adminPrepareTaif, 'تم فتح الاستعداد لوَهَج')
       return
     }
     const value = Number(target)
@@ -41,7 +41,7 @@ export function AdminPage() {
   async function startTaif() {
     if (!taifRound || taifStarting || state.submittedCount < 4) return
     setTaifStarting(true)
-    try { await act(() => adminStartTaif(taifRound.id), 'بدأ طَيْف') } finally { setTaifStarting(false) }
+    try { await act(() => adminStartTaif(taifRound.id), 'بدأ وَهَج') } finally { setTaifStarting(false) }
   }
   function copyJoin() { void navigator.clipboard?.writeText(joinUrl); flash('تم نسخ رابط التسجيل') }
   function downloadQr() { const anchor = document.createElement('a'); anchor.href = qr; anchor.download = 'awwalha-join-qr.png'; anchor.click() }
@@ -51,17 +51,17 @@ export function AdminPage() {
     <section className="system-strip"><div className="system-title"><Gauge /><div><strong>حالة النظام</strong><span>جاهز · بدون اتصالات لحظية للجمهور</span></div></div><Metric label="المسجلون" value={state.registeredCount} accent /><Metric label="اللعبة الحالية" value="الردهة" /><Metric label="المرحلة" value="جاهز" /></section>
     <div className="admin-grid">
       <Card className="control-card">
-        <div className="card-heading"><div><p className="eyebrow">الجولة التالية</p><h2>{tab === 'perfect' ? 'الثانية المثالية' : tab === 'look' ? 'أول نظرة' : 'طَيْف'}</h2></div></div>
+        <div className="card-heading"><div><p className="eyebrow">الجولة التالية</p><h2>{tab === 'perfect' ? 'الثانية المثالية' : tab === 'look' ? 'أول نظرة' : 'وَهَج'}</h2></div></div>
         <div className="game-tabs" role="group" aria-label="اختيار اللعبة">
           <button aria-label="الثانية المثالية" aria-pressed={tab === 'perfect'} className={tab === 'perfect' ? 'active' : ''} onClick={() => setTab('perfect')}><TimerReset /><strong>الثانية المثالية</strong><small>التوقيت هو كل شيء</small></button>
           <button aria-label="أول نظرة" aria-pressed={tab === 'look'} className={tab === 'look' ? 'active' : ''} onClick={() => setTab('look')}><Eye /><strong>أول نظرة</strong><small>لاحظ… واكتشف</small></button>
-          <button aria-label="طيف" aria-pressed={tab === 'taif'} className={tab === 'taif' ? 'active' : ''} onClick={() => setTab('taif')}><TaifMark /><strong>طَيْف</strong><small>دع اللون يختار</small></button>
+          <button aria-label="وَهَج" aria-pressed={tab === 'taif'} className={tab === 'taif' ? 'active' : ''} onClick={() => setTab('taif')}><TaifMark /><strong>وَهَج</strong><small>دع اللون يختار</small></button>
         </div>
         {tab === 'taif' ? <div className="taif-admin-flow">
           <div className="taif-fixed-winners"><span>الفائزون ثابتون</span><strong>٤</strong><small>٢ أخضر فاتح · ٢ أصفر فاتح</small></div>
           {!taifRound ? <Button className="prepare-button" onClick={prepareRound}>فتح الاستعداد <Play size={18} /></Button>
-          : taifRound.phase === 'preparing' ? <><div className="taif-ready-count"><strong>{state.submittedCount}</strong><span>مستعد</span></div><Button className="prepare-button" disabled={state.submittedCount < 4 || taifStarting} onClick={() => void startTaif()}>ابدأ طَيْف <Play size={18} /></Button></>
-          : <div className="schedule-callout"><Settings2 /><div><strong>طَيْف جارٍ الآن</strong><span>تم قفل قائمة المستعدين واختيار أربعة فائزين.</span></div></div>}
+          : taifRound.phase === 'preparing' ? <><div className="taif-ready-count"><strong>{state.submittedCount}</strong><span>مستعد</span></div><Button className="prepare-button" disabled={state.submittedCount < 4 || taifStarting} onClick={() => void startTaif()}>ابدأ وَهَج <Play size={18} /></Button></>
+          : <div className="schedule-callout"><Settings2 /><div><strong>وَهَج جارٍ الآن</strong><span>تم قفل قائمة المستعدين واختيار أربعة فائزين.</span></div></div>}
         </div> : <>
           <div className="control-form">
             <label><span>عدد الفائزين</span><div className="stepper"><button onClick={() => setWinners(Math.max(1, winners - 1))}>−</button><strong>{winners}</strong><button onClick={() => setWinners(Math.min(6, winners + 1))}>+</button></div></label>
