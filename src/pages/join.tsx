@@ -5,13 +5,13 @@ import { PageShell } from '../components/page-shell'
 import { Wordmark } from '../components/brand'
 import { Button, Card } from '../components/ui'
 import { recoverParticipant, registerParticipant } from '../lib/api'
-import { saveSession } from '../lib/session'
+import { clearPendingRegistration, readPendingRegistration, saveSession } from '../lib/session'
 
 export function JoinPage() {
   const navigate = useNavigate()
   const [mode, setMode] = useState<'join' | 'recover'>('join')
-  const [name, setName] = useState('')
-  const [phone, setPhone] = useState('')
+  const [name, setName] = useState(() => readPendingRegistration()?.displayName ?? '')
+  const [phone, setPhone] = useState(() => readPendingRegistration()?.phone ?? '')
   const [code, setCode] = useState('')
   const [recoveryCode, setRecoveryCode] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -33,6 +33,8 @@ export function JoinPage() {
         if (name.trim().length < 2) throw new Error('اكتب اسمك كما تحب أن يظهر على الشاشة')
         const result = await registerParticipant(name, phone)
         saveSession(result)
+        clearPendingRegistration(result.token)
+        setName(result.displayName)
         setRecoveryCode(result.recoveryCode)
       } else {
         const result = await recoverParticipant(phone, code)
@@ -41,7 +43,7 @@ export function JoinPage() {
       }
     } catch (reason) {
       const message = reason instanceof Error ? reason.message : 'حدث خطأ'
-      setError(message.includes('already_registered') ? 'هذا الرقم مسجل بالفعل' : message)
+      setError(message.includes('already_registered') ? 'هذا الرقم مسجل بالفعل. إذا سبق أن سجلت من هذا الجهاز، أعد المحاولة بنفس الرقم؛ وإلا استخدم استرجاع الدخول.' : message)
     } finally {
       setBusy(false)
     }

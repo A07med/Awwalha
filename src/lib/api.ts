@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import type { PublicEventState, RegisterResult } from '../types'
 import { normalizeOmanPhone } from './phone'
+import { prepareRegistration, readPendingRegistration } from './session'
 
 const isSupabaseMode = import.meta.env.VITE_APP_MODE === 'supabase'
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined
@@ -23,7 +24,20 @@ export async function fetchPublicState(signal?: AbortSignal): Promise<PublicEven
 export async function registerParticipant(displayName: string, phoneInput: string): Promise<RegisterResult> {
   const phone = normalizeOmanPhone(phoneInput)
   if (!phone) throw new Error('أدخل رقمًا عمانيًا صحيحًا')
-  return rpc('register_participant', { p_display_name: displayName.trim(), p_phone: phone })
+  const previous = readPendingRegistration()
+  const pending = prepareRegistration(displayName, phone)
+  // The staging failure appeared only when 1,000 clients entered PostgREST
+  // together. Spread *new* registrations below the measured healthy 500/3s
+  // arrival rate; retries with retained credentials should resolve promptly.
+  if (previous?.token !== pending.token) {
+    await new Promise((resolve) => setTimeout(resolve, Math.floor(Math.random() * 8000)))
+  }
+  return rpc('register_participant', {
+    p_display_name: pending.displayName,
+    p_phone: pending.phone,
+    p_session_token: pending.token,
+    p_recovery_code: pending.recoveryCode,
+  })
 }
 
 export async function recoverParticipant(phoneInput: string, recoveryCode: string): Promise<Omit<RegisterResult, 'recoveryCode'>> {
