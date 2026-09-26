@@ -6,6 +6,7 @@ import { StageTaifPage } from './stage-taif'
 const mocks = vi.hoisted(() => ({ elapsedMs: 7000, winnersAvailable: true }))
 vi.mock('../hooks/use-public-state', () => ({
   usePublicState: () => ({
+    hydrated: true,
     state: { ...structuredClone(demoTaifState), taifWinners: mocks.winnersAvailable ? demoTaifState.taifWinners : [] },
     refreshAtTaifReveal: vi.fn(),
   }),

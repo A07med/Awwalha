@@ -1,0 +1,15 @@
+<!doctype html><!-- Local visual QA only; not a Vite build entry. --><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><div id="root"></div><script type="module">
+import React from 'react'; import {createRoot} from 'react-dom/client';
+import {StagePerfectPage} from '/src/pages/stage-perfect.tsx';
+import {StageFirstLookPage} from '/src/pages/stage-first-look.tsx';
+import {StageTaifPage} from '/src/pages/stage-taif.tsx';
+import '@fontsource-variable/inter/wght.css';
+import '@fontsource/ibm-plex-sans-arabic/arabic-400.css';
+import '@fontsource/ibm-plex-sans-arabic/arabic-500.css';
+import '@fontsource/ibm-plex-sans-arabic/arabic-600.css';
+import '@fontsource/ibm-plex-sans-arabic/arabic-700.css';
+import '@fontsource/tajawal/arabic-700.css';import '@fontsource/tajawal/arabic-800.css';
+import '/src/styles.css';import '/src/brand-theme.css';import '/src/reference-theme.css';import '/src/projector.css';
+const Page={perfect_second:StagePerfectPage,first_look:StageFirstLookPage,taif:StageTaifPage}[new URLSearchParams(location.search).get('game')];
+createRoot(document.getElementById('root')).render(React.createElement(React.StrictMode,null,React.createElement(Page)));
+</script></body></html>

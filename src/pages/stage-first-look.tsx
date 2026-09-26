@@ -1,7 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Eye, UsersRound } from 'lucide-react'
-import { AmbientBackground, Wordmark } from '../components/brand'
-import { StatusPill } from '../components/ui'
+import { useEffect, useRef, useState } from 'react'
+import { Projector, StageCountdown, StageMark, StageWaiting } from '../components/projector'
 import { VisualField } from '../components/visual-field'
 import { WinnerGrid } from '../components/winner-grid'
 import { usePublicState } from '../hooks/use-public-state'
@@ -9,24 +7,42 @@ import { useScheduledClock } from '../hooks/use-scheduled-clock'
 import { demoFirstLookState } from '../lib/demo-state'
 import { adminRoundDetail } from '../lib/api'
 import { useClockSync } from '../hooks/use-clock-sync'
+import { ownStageRound, stageLoadingState, stagePhase } from '../lib/stage-state'
 
+type Detail = Awaited<ReturnType<typeof adminRoundDetail>>
 export function StageFirstLookPage() {
-  const { state } = usePublicState({ phase: 'active', operator: true }, demoFirstLookState)
-  const round = state.round
-  const [privateRound, setPrivateRound] = useState<{ correctCount: number; visualSeed: number; visualCategory: 'seeds' | 'leaves' | 'fish' | 'bubbles' | 'drops'; displayDurationMs: number } | null>(null)
+  const real = import.meta.env.VITE_APP_MODE === 'supabase'
+  const { state, hydrated } = usePublicState({ operator: true }, real ? stageLoadingState : demoFirstLookState)
+  const round = ownStageRound(state, 'first_look', real)
+  const requestId = real && hydrated ? round?.id : undefined
+  const [detail, setDetail] = useState<{ id: string; data: Detail | null; failed: boolean } | null>(null)
+  const request = useRef<{ id: string; promise: Promise<Detail> } | null>(null)
   useEffect(() => {
-    if (import.meta.env.VITE_APP_MODE === 'supabase' && round?.id) void adminRoundDetail(round.id).then(setPrivateRound)
-  }, [round?.id])
+    setDetail(null)
+    if (!requestId) return
+    let cancelled = false
+    // Share the request across StrictMode replay; polling must not retry failures.
+    if (request.current?.id !== requestId) request.current = { id: requestId, promise: adminRoundDetail(requestId) }
+    void request.current.promise.then((data) => {
+      if (!cancelled) setDetail({ id: requestId, data, failed: false })
+    }).catch(() => {
+      if (!cancelled) setDetail({ id: requestId, data: null, failed: true })
+    })
+    return () => { cancelled = true }
+  }, [requestId])
+  // Clear private data on the first render of a different round, before effects.
+  const privateRound = detail?.id === requestId ? detail?.data : null
+  const failed = detail?.id === requestId && detail?.failed
   const offsetMs = useClockSync(Boolean(round?.startsAt))
-  const { elapsedMs } = useScheduledClock(round?.startsAt, offsetMs)
-  const show = elapsedMs >= 0 && elapsedMs < (privateRound?.displayDurationMs ?? round?.displayDurationMs ?? 1800)
-  const countdown = elapsedMs < 0 ? Math.max(1, Math.ceil(-elapsedMs / 1000)) : 0
-  const visualCount = privateRound?.correctCount ?? 36
-  return <main className="stage-page look-stage" dir="rtl"><AmbientBackground /><header className="stage-header"><Wordmark /><div><StatusPill tone="gold"><Eye size={16} /> أول نظرة</StatusPill><span>ركز… عندك لحظتان فقط</span></div></header>
-    {state.phase === 'revealed' && state.winners.length ? <section className="stage-winners"><p className="eyebrow">أدق الملاحظات</p><h1>الفائزون</h1><WinnerGrid winners={state.winners} game="first_look" /></section>
-    : countdown ? <section className="look-message"><Eye className="stage-hero-icon" aria-hidden="true" /><h1 className="stage-game-title">أول نظرة</h1><p>ركز</p><strong>{countdown}</strong></section>
-    : show || import.meta.env.VITE_APP_MODE !== 'supabase' ? <section className="look-field-wrap"><VisualField seed={privateRound?.visualSeed ?? round?.visualSeed ?? 90731} count={visualCount} category={privateRound?.visualCategory ?? round?.visualCategory ?? 'leaves'} /><span className="look-hint">عدّها بنظرة واحدة</span></section>
-    : <section className="look-message"><Eye className="stage-hero-icon" aria-hidden="true" /><h1 className="stage-game-title">أول نظرة</h1><p>كم كانوا؟</p><strong>؟</strong></section>}
-    <footer className="stage-footer"><span><UsersRound /> {state.registeredCount} مشاركًا</span><span className="submission-progress"><i style={{ width: Math.min(100, state.submittedCount / Math.max(1, state.registeredCount) * 100) + '%' }} /></span><strong>{state.submittedCount} إجابة</strong></footer>
-  </main>
+  const { elapsedMs } = useScheduledClock(round?.startsAt, offsetMs, round?.id)
+  const phase = stagePhase(hydrated, round, elapsedMs)
+  const visual = real ? privateRound : { correctCount: 36, visualSeed: round?.visualSeed ?? 90731, visualCategory: round?.visualCategory ?? 'leaves', displayDurationMs: round?.displayDurationMs ?? 1800 }
+  const show = phase === 'active' && visual && elapsedMs < visual.displayDurationMs
+  return <Projector game="first_look" phase={phase} registered={hydrated ? state.registeredCount : undefined} submitted={round ? state.submittedCount : 0} metric="إجابة">
+    {phase === 'revealed' && state.winners.length ? <div className="projector-winners"><span className="projector-kicker">أدق الملاحظات</span><h1>الفائزون</h1><WinnerGrid winners={state.winners} game="first_look" /></div>
+      : phase === 'countdown' ? <StageCountdown elapsedMs={elapsedMs} />
+        : show && visual ? <div className="projector-visual"><VisualField projector seed={visual.visualSeed} count={visual.correctCount} category={visual.visualCategory} /></div>
+          : phase === 'active' && visual ? <div className="projector-message projector-question"><StageMark game="first_look" /><h1>كم عنصرًا رأيت؟</h1></div>
+            : <StageWaiting game="first_look" phase={phase} error={Boolean(failed)} />}
+  </Projector>
 }

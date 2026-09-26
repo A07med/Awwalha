@@ -1,0 +1,48 @@
+/* Projector-only composition. The presentation field is anchored to the physical
+   viewport center, independently of RTL, asymmetric artwork and header/footer. */
+.projector {
+  position: fixed; inset: 0; width: 100%; height: 100dvh; overflow: hidden;
+  isolation: isolate; color: #faf3ff; background: #210b2c;
+  --projector-margin: clamp(28px, 4vw, 104px);
+}
+.projector::before { content: ''; position: absolute; inset: 0; z-index: -1; background: radial-gradient(ellipse at 50% 48%, #54336566, transparent 62%), linear-gradient(180deg, #210b2c, #2e1937); }
+.projector::after { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: url('/poster-horizon.png') right bottom / 56vw auto no-repeat; opacity: .20; mask-image: linear-gradient(to left, #000, transparent 58%), linear-gradient(to top, #000, transparent 65%); mask-composite: intersect; }
+.projector-header { position: absolute; inset: clamp(24px, 3vh, 48px) var(--projector-margin) auto; display: flex; justify-content: space-between; align-items: center; z-index: 2; }
+.projector-header .wordmark-image { width: clamp(84px, 6vw, 180px); height: auto; }
+.projector-badge { color: #bc96e6; font-size: clamp(18px, 1.45vw, 34px); border: 1px solid #bc96e62b; border-radius: 100px; padding: .45em 1em; }
+.projector-canvas { position: absolute; inset: 16vh var(--projector-margin); display: grid; place-items: center; text-align: center; }
+.projector-message, .projector-perfect, .projector-countdown, .projector-winners { width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.projector h1 { font-family: var(--font-display); font-size: clamp(48px, 5.2vw, 128px); line-height: 1.2; margin: .2em 0; }
+.projector-message p { color: #d8c3e8; font-size: clamp(26px, 2.4vw, 60px); margin: .3em 0; }
+.projector-mark { display: grid; place-items: center; width: clamp(90px, 9vw, 210px); height: clamp(90px, 9vw, 210px); color: #bc96e6; margin-bottom: 2vh; filter: drop-shadow(0 0 22px #bc96e631); }
+.projector-mark svg { width: 80%; height: 80%; stroke-width: 1.3; }
+.projector-kicker, .projector-unit { color: #cdb5dd; font-size: clamp(22px, 1.8vw, 44px); }
+.projector-perfect h1 { font-size: clamp(32px, 2.8vw, 70px); margin: 0 0 2vh; }
+.projector-target { font: 700 clamp(110px, 12vw, 300px)/1.08 var(--font-latin); letter-spacing: -.055em; color: #ffd166; font-variant-numeric: tabular-nums; }
+.projector-unit { color: #ffd166; margin-bottom: 3vh; }
+.projector-timer { font: 400 clamp(65px, 6.5vw, 164px)/1.1 var(--font-latin); font-variant-numeric: tabular-nums; color: #bc96e6; min-width: 5em; }
+.projector-timer.masked { letter-spacing: .06em; color: #dec4f5; }
+.projector-countdown span { color: #d8c3e8; font-size: clamp(24px, 2.2vw, 56px); }
+.projector-countdown strong { font: 650 clamp(170px, 23vh, 440px)/1.1 var(--font-latin); color: #ffd166; text-shadow: 0 0 80px #ffd16622; }
+.projector-rail { position: absolute; inset: auto var(--projector-margin) 4vh; display: grid; direction: ltr; grid-template-columns: 1fr minmax(100px, 28vw) 1fr; align-items: center; gap: 3vw; color: #cdb5dd99; font-size: clamp(18px, 1.45vw, 36px); }
+.projector-rail span { direction: rtl; text-align: left; }
+.projector-rail span:last-child { text-align: right; }
+.projector-rail i { height: 1px; background: linear-gradient(90deg, transparent, #bc96e638, transparent); }
+.projector-visual { position: absolute; inset: -1vh 2vw; border: 1px solid #bc96e624; border-radius: 3vw; background: #251130cc; container-type: size; }
+.projector-visual .visual-field { inset: 6%; transition: none; }
+.projector-visual .visual-item { width: min(calc(88cqw / var(--visual-columns) * .46), calc(88cqh / var(--visual-rows) * .46)); height: min(calc(88cqw / var(--visual-columns) * .46), calc(88cqh / var(--visual-rows) * .46)); color: #ffd166; fill: #ffd16612; filter: none; }
+.projector-question h1 { font-size: clamp(64px, 6vw, 150px); }
+.projector-wahaj .projector-mark { width: clamp(110px, 11vw, 270px); height: clamp(110px, 11vw, 270px); border-radius: 50%; background: radial-gradient(circle, #bc96e61c, transparent 70%); margin-bottom: 0; }
+.projector-wahaj h1 { font-size: clamp(64px, 6.6vw, 160px); }
+.projector-ready-count { margin-top: 2vh; color: #ffd166; font: 700 clamp(50px, 4vw, 105px)/1.2 var(--font-display); }
+.projector-ready-count span { font-size: .55em; color: #d8c3e8; font-weight: 500; }
+.projector-final { background: radial-gradient(ellipse at 20% 90%, #d8edcd55, transparent 48%), radial-gradient(ellipse at 80% 90%, #ffe4a455, transparent 48%), #faf6ff; }
+.projector-final h1 { font-size: clamp(70px, 8vw, 205px); padding: 4vw; }
+.projector-winners h1 { font-size: clamp(44px, 4vw, 105px); margin: 1vh 0 3vh; }
+.projector-winners .winner-grid { width: min(100%, 78vw); grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.5vw; }
+.projector-winners .winner-grid.winners-1 { grid-template-columns: minmax(0, 42vw); justify-content: center; }
+.projector-winners .winner-grid.winners-2 { grid-template-columns: repeat(2, minmax(0, 32vw)); justify-content: center; }
+.projector-winners .winner-card { min-width: 0; padding: 2vh 1vw; }
+.projector-winners .winner-card h3 { font-size: clamp(24px, 2vw, 48px); overflow-wrap: anywhere; }
+.projector-winners .winner-card strong { font-size: clamp(20px, 1.55vw, 38px); }
+.projector-winners .winner-rank { font-size: clamp(18px, 1.4vw, 32px); }

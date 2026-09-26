@@ -25,6 +25,7 @@ export function usePublicState(options: PollOptions = {}, demoState = demoLobbyS
   const demo = import.meta.env.VITE_APP_MODE !== 'supabase'
   const [state, setState] = useState<PublicEventState>(demoState)
   const [error, setError] = useState<string | null>(null)
+  const [hydrated, setHydrated] = useState(demo)
   const requestRef = useRef<AbortController | null>(null)
   const inFlightRef = useRef<Promise<void> | null>(null)
   const lastFetchedRef = useRef<PublicEventState | null>(null)
@@ -49,6 +50,7 @@ export function usePublicState(options: PollOptions = {}, demoState = demoLobbyS
           return mergePublicSnapshot(current, next)
         })
         hydratedRef.current = true
+        setHydrated(true)
         failureRef.current = 0
         setError(null)
       } catch (reason) {
@@ -106,7 +108,7 @@ export function usePublicState(options: PollOptions = {}, demoState = demoLobbyS
     }
   }, [demo, options.active, options.timingCritical, refresh])
 
-  return { state, error, refresh, refreshAtTaifReveal, setState }
+  return { state, error, hydrated, refresh, refreshAtTaifReveal, setState }
 }
 
 export function useTaifRevealRefresh(roundId: string | null, refresh: (roundId: string) => Promise<void>) {

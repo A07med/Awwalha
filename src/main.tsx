@@ -12,5 +12,6 @@ import '@fontsource/tajawal/arabic-800.css'
 import './styles.css'
 import './brand-theme.css'
 import './reference-theme.css'
+import './projector.css'
 
 createRoot(document.getElementById('root')!).render(<StrictMode><BrowserRouter><App /></BrowserRouter></StrictMode>)
