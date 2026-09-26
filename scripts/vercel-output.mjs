@@ -27,8 +27,22 @@ export async function buildVercelOutput(root = process.cwd()) {
       const js = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText.replace("'./public-snapshot'", "'./public-snapshot.js'")
       await writeFile(resolve(directory, `${file}.js`), js)
     }
-    await writeFile(resolve(directory, '.vc-config.json'), JSON.stringify({ runtime: 'edge', entrypoint: `${name}.js`, envVarsInUse: name === 'state' ? ['SUPABASE_URL', 'SUPABASE_ANON_KEY'] : [] }))
-    if (name === 'state') await writeFile(resolve(dirname(directory), 'state.prerender-config.json'), JSON.stringify(statePrerender))
+    if (name === 'state') {
+      // Native ISR is a prerendered Node function; ordinary Edge functions do
+      // not activate the shared prerender layer/request collapsing.
+      await writeFile(resolve(directory, '.vc-config.json'), JSON.stringify({ runtime: 'nodejs22.x', handler: 'index.cjs', launcherType: 'Nodejs', shouldAddHelpers: true }))
+      await writeFile(resolve(directory, 'package.json'), JSON.stringify({ type: 'module' }))
+      await writeFile(resolve(directory, 'index.cjs'), `module.exports = async function (_req, res) {
+  const { default: generate } = await import('./state.js');
+  const response = await generate();
+  res.statusCode = response.status;
+  for (const [key, value] of response.headers) res.setHeader(key, value);
+  res.end(await response.text());
+};\n`)
+      await writeFile(resolve(dirname(directory), 'state.prerender-config.json'), JSON.stringify(statePrerender))
+    } else {
+      await writeFile(resolve(directory, '.vc-config.json'), JSON.stringify({ runtime: 'edge', entrypoint: `${name}.js`, envVarsInUse: [] }))
+    }
   }
 }
 

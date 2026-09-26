@@ -8,6 +8,7 @@ but did not coalesce all simultaneous dynamic-function misses.
 ## Selected existing platform capability
 
 Use Vercel's native ISR via Build Output API for **only** `/api/state`.
+The snapshot generator uses Node (the native prerender runtime), not Edge.
 The Vite application, `/api/time`, RPCs, database schema, game rules,
 registration idempotency, and participant polling remain unchanged.
 No new dependency/store/plan upgrade. Runtime Cache get/set alone has no

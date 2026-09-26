@@ -1,7 +1,5 @@
 import { safePublicSnapshot } from './public-snapshot'
 
-export const config = { runtime: 'edge' }
-
 // Direct HTTP p99 measured 1487ms (SQL ~6ms). ISR serves its shared
 // last-good copy while refreshing; do not wait for Edge's 25s limit.
 export const REFRESH_TIMEOUT_MS = 2000
