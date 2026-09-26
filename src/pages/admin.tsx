@@ -7,7 +7,7 @@ import { TaifMark } from '../components/taif-mark'
 import { demoLobbyState } from '../lib/demo-state'
 import { usePublicState } from '../hooks/use-public-state'
 import { useOperatorRoundStatus } from '../hooks/use-operator-round-status'
-import { adminErrorMessage, adminRoundActions } from '../lib/admin-actions'
+import { adminErrorMessage, adminRoundActions, confirmedAdminState, type ConfirmedAdminTransition } from '../lib/admin-actions'
 import { adminClearRegistrations, adminCloseRound, adminPrepareRound, adminPrepareTaif, adminResetGames, adminRevealWinners, adminSetRegistration, adminStartTaif, adminStartTieBreak, adminResolveRound } from '../lib/api'
 
 export function AdminPage() {
@@ -15,7 +15,9 @@ export function AdminPage() {
   const operatorCount = useOperatorRoundStatus(state.round?.id ?? null)
   const submittedCount = operatorCount ?? state.submittedCount
   const [closedRoundId, setClosedRoundId] = useState<string | null>(null)
-  const actions = adminRoundActions(state, closedRoundId === state.round?.id)
+  const [confirmedTransition, setConfirmedTransition] = useState<ConfirmedAdminTransition | null>(null)
+  const operatorState = confirmedAdminState(state, confirmedTransition)
+  const actions = adminRoundActions(operatorState, closedRoundId === state.round?.id)
   const [busy, setBusy] = useState(false)
   const busyRef = useRef(false)
   const [tab, setTab] = useState<'perfect' | 'look' | 'taif'>('perfect')
@@ -51,10 +53,12 @@ export function AdminPage() {
       const phase = kind === 'close' ? 'closed' : kind === 'reveal' ? 'revealed' : 'resolved'
       if (kind === 'close') setClosedRoundId(roundId)
       const tieNeeded = kind === 'resolve' && (resolution.tiedCount ?? 0) > (resolution.remainingSeats ?? 0) && (resolution.remainingSeats ?? 0) > 0
+      const closesAt = kind === 'close' ? new Date(Math.min(Date.now(), Date.parse(operatorState.round!.closesAt ?? new Date().toISOString()))).toISOString() : operatorState.round!.closesAt
+      setConfirmedTransition({ roundId, phase, publicPhase: tieNeeded ? 'tie_break' : phase, closesAt })
       // Confirmed backend transitions prevent repeat clicks while ISR catches up.
       setState((current) => current.round?.id === roundId ? { ...current,
         phase: tieNeeded ? 'tie_break' : phase,
-        round: { ...current.round, phase, ...(kind === 'close' ? { closesAt: new Date(Math.min(Date.now(), Date.parse(current.round.closesAt ?? new Date().toISOString()))).toISOString() } : {}) },
+        round: { ...current.round, phase, closesAt },
       } : current)
       return result
     }, kind === 'close' ? 'تم إغلاق الجولة' : kind === 'resolve' ? 'تم حساب النتيجة' : kind === 'tie' ? 'تم إعداد الجولة الفاصلة' : 'تم كشف الفائزين')

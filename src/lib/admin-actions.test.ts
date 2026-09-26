@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest'
 import { demoPerfectState } from './demo-state'
-import { adminErrorMessage, adminRoundActions } from './admin-actions'
+import { adminErrorMessage, adminRoundActions, confirmedAdminState } from './admin-actions'
 
 it('permits only close → resolve → reveal, with conditional tie-break', () => {
   const state = structuredClone(demoPerfectState)
@@ -35,4 +35,15 @@ it.each(['round_not_closeable', 'round_not_closed', 'parent_not_resolved', 'no_t
   const text = adminErrorMessage(new Error(message))
   expect(text).toMatch(/[\u0600-\u06ff]/)
   expect(text).not.toContain(message)
+})
+it('does not regress successful admin transitions to intermediate ISR snapshots', () => {
+  const state = structuredClone(demoPerfectState)
+  state.round!.phase = state.phase = 'closed'; state.stateVersion = 104
+  const confirmed = { roundId: state.round!.id, phase: 'resolved' as const, publicPhase: 'resolved' as const, closesAt: state.round!.closesAt }
+  const effective = confirmedAdminState(state, confirmed)
+  expect(adminRoundActions(effective).resolve).toBe(false)
+  expect(adminRoundActions(effective).reveal).toBe(true)
+  expect(confirmedAdminState(state, { ...confirmed, roundId: 'different' })).toBe(state)
+  state.round!.phase = state.phase = 'revealed'
+  expect(confirmedAdminState(state, confirmed)).toBe(state)
 })

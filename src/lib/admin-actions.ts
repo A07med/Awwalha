@@ -1,5 +1,20 @@
 import type { PublicEventState } from '../types'
 
+export interface ConfirmedAdminTransition {
+  roundId: string
+  phase: 'closed' | 'resolved' | 'revealed'
+  publicPhase: 'closed' | 'resolved' | 'tie_break' | 'revealed'
+  closesAt: string | null
+}
+export function confirmedAdminState(state: PublicEventState, confirmed: ConfirmedAdminTransition | null): PublicEventState {
+  if (!confirmed || state.round?.id !== confirmed.roundId) return state
+  const rank: Record<string, number> = { preparing: 0, active: 1, closed: 2, resolved: 3, revealed: 4 }
+  if ((rank[state.round.phase] ?? 5) > rank[confirmed.phase]) return state
+  // An intermediate ISR snapshot may have a newer version than our last
+  // poll, but still precede the successful RPC. Do not re-enable old actions.
+  return { ...state, phase: confirmed.publicPhase, round: { ...state.round, phase: confirmed.phase, closesAt: confirmed.closesAt } }
+}
+
 export function adminRoundActions(state: PublicEventState, closeConfirmed = false) {
   const round = state.round
   const resolved = round?.phase === 'resolved'
