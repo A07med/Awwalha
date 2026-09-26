@@ -11,6 +11,7 @@ import { perfectSecondScore } from '../lib/ranking'
 import { useClockSync } from '../hooks/use-clock-sync'
 import { TaifScreen } from '../components/taif-screen'
 import { scheduledInteractionActive } from '../lib/scheduled-activation'
+import { usePrivateTieEligibility } from '../hooks/use-private-tie-eligibility'
 
 type SubmissionStatus = 'idle' | 'locally_submitted' | 'submitting' | 'confirmed' | 'failed'
 
@@ -102,13 +103,14 @@ export function PlayPage() {
   const initialState = import.meta.env.VITE_APP_MODE === 'supabase' ? demoLobbyState : demoPerfectState
   const { state, refreshAtTaifReveal } = usePublicState({ submitted, timingCritical, taifReady }, initialState)
   const round = state.round
+  const privateTieEligible = usePrivateTieEligibility(state, session)
   const currentRoundIdRef = useRef<string | null>(round?.id ?? null)
   currentRoundIdRef.current = round?.id ?? null
   const offsetMs = useClockSync(Boolean(round?.startsAt))
   const { elapsedMs } = useScheduledClock(round?.startsAt, offsetMs, round?.id ?? null)
   const active = round?.gameType === 'taif'
     ? round.phase === 'active' && elapsedMs >= 0
-    : scheduledInteractionActive(state, round?.id ?? null, elapsedMs, session.participantPublicId)
+    : scheduledInteractionActive(state, round?.id ?? null, elapsedMs, session.participantPublicId, privateTieEligible)
   const taifRevealElapsedMs = round?.revealAt && round.startsAt ? Date.parse(round.revealAt) - Date.parse(round.startsAt) : 6000
   useTaifRevealRefresh(round?.gameType === 'taif' && active && elapsedMs >= taifRevealElapsedMs && state.taifWinners.length !== 4 ? round.id : null, refreshAtTaifReveal)
   useEffect(() => setTimingCritical(Boolean(active && !submitted && round?.gameType !== 'taif')), [active, submitted, round?.gameType])
@@ -127,7 +129,7 @@ export function PlayPage() {
   }, [round?.id, session.participantPublicId])
   const hiddenTimer = active && round?.gameType === 'perfect_second' && elapsedMs > (round.hideTimerAfterMs ?? 1500)
   const isTieRound = Boolean(round?.parentRoundId) || state.phase === 'tie_break'
-  const isTieEligible = isTieRound && state.tieEligiblePublicIds.includes(session.participantPublicId)
+  const isTieEligible = isTieRound && (round?.gameType === 'first_look' ? privateTieEligible : state.tieEligiblePublicIds.includes(session.participantPublicId))
   const isTieSpectator = isTieRound && !isTieEligible
   const winner = state.winners.find((item) => item.participantPublicId === session.participantPublicId)
   const revealedWithoutWin = state.phase === 'revealed' && !winner
@@ -222,5 +224,6 @@ export function PlayPage() {
       </form>
     </Card>}
     <footer className="participant-footer"><span className="connection-dot" /> التحديث موزّع تلقائيًا <span>·</span> لا تغلق الصفحة</footer>
+    <a href="/admin/login" className="admin-entry">دخول الفريق / الإدارة</a>
   </PageShell>
 }

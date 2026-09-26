@@ -11,6 +11,23 @@ function env() {
   vi.stubEnv('SUPABASE_ANON_KEY', 'public')
   vi.stubEnv('VERCEL_URL', 'preview.vercel.app')
 }
+it('publishes registration even with no current round, after secure membership check', async () => {
+  env()
+  const fetcher = vi.fn().mockResolvedValueOnce(Response.json(true)).mockResolvedValueOnce(Response.json({ registrationOpen: false, round: null, stateVersion: 12 }))
+  vi.stubGlobal('fetch', fetcher)
+  const request = new Request('https://preview/api/publish-state', { method: 'POST', headers: { authorization: 'Bearer admin', 'content-type': 'application/json' }, body: JSON.stringify({ registrationOpen: false }) })
+  expect((await publish(request, 'private')).status).toBe(200)
+  expect(fetcher.mock.calls[0][0]).toContain('/rpc/is_admin')
+})
+it('rejects authenticated nonadmins and stale registration snapshots', async () => {
+  env()
+  const request = () => new Request('https://preview/api/publish-state', { method: 'POST', headers: { authorization: 'Bearer user', 'content-type': 'application/json' }, body: JSON.stringify({ registrationOpen: false }) })
+  const fetcher = vi.fn().mockResolvedValueOnce(Response.json(false)); vi.stubGlobal('fetch', fetcher)
+  expect((await publish(request(), 'private')).status).toBe(403)
+  expect(fetcher).toHaveBeenCalledTimes(1)
+  fetcher.mockResolvedValueOnce(Response.json(true)).mockResolvedValueOnce(Response.json({ registrationOpen: true }))
+  expect((await publish(request(), 'private')).status).toBe(409)
+})
 it('rejects unauthenticated requests before fetching', async () => {
   const fetcher = vi.fn(); vi.stubGlobal('fetch', fetcher)
   expect((await publish(req(''), 'private')).status).toBe(401)

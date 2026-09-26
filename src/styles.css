@@ -136,12 +136,17 @@ input:focus, select:focus { border-color: var(--aqua); box-shadow: 0 0 0 3px rgb
 .taif-ready-button:active { transform: scale(.97); }
 .taif-ready-pulse { width: 42px; height: 42px; border-radius: 50%; background: var(--aqua); box-shadow: 0 0 0 0 rgba(85,214,197,.42); animation: taif-ready-pulse 1.8s ease-out infinite; }
 .taif-active, .taif-stage-active { background: #55d6c5; animation: taif-spectrum 4.2s linear infinite; }
-.taif-result { animation: none; }
-.taif-green { background: #b8f2c2; }
-.taif-yellow { background: #ffe69a; }
-.taif-white { background: #fff; }
+.taif-result { animation: none; opacity: 1; border: 0; padding: 0; background-image: none; height: auto; min-height: 100dvh; }
+.taif-green { background: #39FF14; }
+.taif-yellow { background: #FFEA00; }
+.taif-white { background: #FFFFFF; }
 
 /* Taif admin + stage */
+.admin-entry { display: block; text-align: center; margin: 18px auto; padding: 12px; color: var(--gold); }
+.registration-closed { text-align: center; padding: 24px 8px; }
+.first-look-summary { margin-top: 18px; padding: 18px; border: 1px solid var(--line); border-radius: 16px; }
+.first-look-summary .button { margin: 8px 0; }
+.winner-page-counter { text-align: center; margin: 12px 0 0; }
 .taif-admin-flow { display: grid; gap: 20px; }
 .taif-fixed-winners { min-height: 160px; display: grid; place-items: center; align-content: center; gap: 6px; border: 1px solid var(--line); border-radius: 18px; background: linear-gradient(135deg, rgba(184,242,194,.08), rgba(255,230,154,.08)); }
 .taif-fixed-winners span, .taif-fixed-winners small { color: var(--muted); }

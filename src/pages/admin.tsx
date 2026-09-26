@@ -5,13 +5,14 @@ import { PageShell } from '../components/page-shell'
 import { Button, Card, Metric, StatusPill } from '../components/ui'
 import { TaifMark } from '../components/taif-mark'
 import { demoLobbyState } from '../lib/demo-state'
+import { stageLoadingState } from '../lib/stage-state'
 import { usePublicState } from '../hooks/use-public-state'
 import { useOperatorRoundStatus } from '../hooks/use-operator-round-status'
 import { adminErrorMessage, adminRoundActions, confirmedAdminState, type ConfirmedAdminTransition } from '../lib/admin-actions'
-import { adminClearRegistrations, adminCloseRound, adminPrepareRound, adminPrepareTaif, adminResetGames, adminRevealWinners, adminSetRegistration, adminStartTaif, adminStartTieBreak, adminResolveRound } from '../lib/api'
+import { adminClearRegistrations, adminCloseRound, adminPrepareRound, adminPrepareTaif, adminResetGames, adminRevealWinners, adminSetRegistration, adminStartTaif, adminStartTieBreak, adminResolveRound, adminFirstLookSummary, adminAcceptFirstLookTie, type FirstLookSummary } from '../lib/api'
 
 export function AdminPage() {
-  const { state, refresh, setState } = usePublicState({ phase: 'lobby', operator: true }, demoLobbyState)
+  const { state, refresh, setState } = usePublicState({ phase: 'lobby', operator: true }, import.meta.env.VITE_APP_MODE === 'supabase' ? stageLoadingState : demoLobbyState)
   const operatorStatus = useOperatorRoundStatus(state.round?.id ?? null, refresh)
   const submittedCount = operatorStatus.submittedCount ?? (operatorStatus.error ? 0 : state.submittedCount)
   const [closedRoundId, setClosedRoundId] = useState<string | null>(null)
@@ -27,6 +28,27 @@ export function AdminPage() {
   const [qr, setQr] = useState('')
   const [notice, setNotice] = useState('')
   const [taifStarting, setTaifStarting] = useState(false)
+  const [summary, setSummary] = useState<FirstLookSummary | null>(null)
+  const [summaryError, setSummaryError] = useState('')
+  const acceptRequest = useRef<{ roundId: string; requestId: string } | null>(null)
+  const summaryRoundId = operatorState.round?.gameType === 'first_look' && operatorState.round.phase === 'resolved' ? operatorState.round.id : null
+  useEffect(() => {
+    let stopped = false
+    setSummary(null); setSummaryError('')
+    if (summaryRoundId && import.meta.env.VITE_APP_MODE === 'supabase') void adminFirstLookSummary(summaryRoundId)
+      .then(value => { if (!stopped) setSummary(value) })
+      .catch(() => { if (!stopped) setSummaryError('تعذر تحميل ملخص النتائج؛ لم تُنفّذ أي قرارات.') })
+    return () => { stopped = true }
+  }, [summaryRoundId, operatorState.phase])
+  async function acceptAll() {
+    if (!summary?.tieNeeded || !summaryRoundId || busyRef.current || !window.confirm(`سيصبح عدد الفائزين ${summary.projectedWinnerCount} بدلاً من ${summary.configuredTarget}`)) return
+    if (acceptRequest.current?.roundId !== summaryRoundId) acceptRequest.current = { roundId: summaryRoundId, requestId: crypto.randomUUID() }
+    await act(async () => {
+      await adminAcceptFirstLookTie(summaryRoundId, acceptRequest.current!.requestId)
+      setConfirmedTransition({ roundId: summaryRoundId, phase: 'resolved', publicPhase: 'resolved', closesAt: operatorState.round!.closesAt })
+      setSummary(await adminFirstLookSummary(summaryRoundId))
+    }, 'تم اعتماد جميع المتعادلين')
+  }
   const taifRound = state.currentGame === 'taif' ? state.round : null
   const joinUrl = typeof location === 'undefined' ? '/join' : location.origin + '/join'
   useEffect(() => { void QRCode.toDataURL(joinUrl, { width: 640, margin: 2, color: { dark: '#210b2c', light: '#00000000' } }).then(setQr) }, [joinUrl])
@@ -83,7 +105,7 @@ export function AdminPage() {
 
   return <PageShell className="admin-page">
     <div className="admin-heading"><div><p className="eyebrow">غرفة التحكم</p><h1>لوحة أولها</h1></div><StatusPill tone="gold"><ShieldCheck size={15} /> وضع المنظم</StatusPill></div>
-    <section className="system-strip"><div className="system-title"><Gauge /><div><strong>حالة النظام</strong><span>جاهز · بدون اتصالات لحظية للجمهور</span></div></div><Metric label="المسجلون" value={state.registeredCount} accent /><Metric label="اللعبة الحالية" value="الردهة" /><Metric label="المرحلة" value="جاهز" /></section>
+    <section className="system-strip"><div className="system-title"><Gauge /><div><strong>حالة النظام</strong><span>بدون اتصالات لحظية للجمهور</span></div></div><Metric label="المسجلون" value={state.registeredCount} accent /><Metric label="اللعبة الحالية" value={state.currentGame === 'first_look' ? 'أول نظرة' : state.currentGame === 'perfect_second' ? 'الثانية المثالية' : state.currentGame === 'taif' ? 'وَهَج' : 'الردهة'} /><Metric label="المرحلة" value={{ lobby: 'الردهة', preparing: 'استعداد', countdown: 'عد تنازلي', active: 'جارية', answering: 'إجابات', closed: 'مغلقة', resolved: 'النتيجة جاهزة', tie_break: 'تعادل', revealed: 'تم الكشف', ended: 'انتهت' }[operatorState.phase]} /></section>
     <div className="admin-grid">
       <Card className="control-card">
         <div className="card-heading"><div><p className="eyebrow">الجولة التالية</p><h2>{tab === 'perfect' ? 'الثانية المثالية' : tab === 'look' ? 'أول نظرة' : 'وَهَج'}</h2></div></div>
@@ -105,11 +127,13 @@ export function AdminPage() {
           </div>
           <div className="schedule-callout"><Settings2 /><div><strong>بداية مجدولة بعد 15 ثانية</strong><span>يصل التوقيت للجمهور مسبقًا ويبدأ محليًا بدقة.</span></div></div>
           <Button className="prepare-button" disabled={busy} onClick={prepareRound}>إعداد الجولة <Play size={18} /></Button>
-          {state.round && state.currentGame !== 'taif' && <div className="round-actions"><span>الإرساليات: {submittedCount}</span><button disabled={busy || !actions.close} onClick={() => void transition('close')}>إغلاق</button><button disabled={busy || !actions.resolve} onClick={() => void transition('resolve')}>حساب النتيجة</button>{actions.tie && <button disabled={busy} onClick={() => void transition('tie')}>جولة فاصلة</button>}<button className="reveal" disabled={busy || !actions.reveal} onClick={() => void transition('reveal')}>كشف الفائزين</button></div>}
+          {state.round && state.currentGame !== 'taif' && <div className="round-actions"><span>الإرساليات: {submittedCount}</span><button disabled={busy || !actions.close} onClick={() => void transition('close')}>إغلاق</button><button disabled={busy || !actions.resolve} onClick={() => void transition('resolve')}>حساب النتيجة</button>{actions.tie && state.currentGame !== 'first_look' && <button disabled={busy} onClick={() => void transition('tie')}>جولة فاصلة</button>}<button className="reveal" disabled={busy || !actions.reveal} onClick={() => void transition('reveal')}>كشف الفائزين</button></div>}
+          {summaryError && <p role="alert">{summaryError}</p>}
+          {summary?.roundId === summaryRoundId && <section className="first-look-summary" aria-label="نتائج أول نظرة"><h3>النتائج</h3><p>عدد الإجابات: {summary.submittedCount} · العدد المطلوب: {summary.configuredTarget}</p><p>فائزون محسومون: {summary.lockedCount}</p><p>الفارق عن الإجابة الصحيحة: {summary.cutoffScore ?? '—'}</p><p>المقاعد المتبقية: {summary.remainingSeats}</p><ul>{summary.groups.map(group => <li key={group.score}>الفارق {group.score}: {group.count} مشاركين</li>)}</ul>{summary.tieNeeded && <><p>لدينا {summary.tiedCount} متعادلين على المركز الأخير</p><p>سيصبح عدد الفائزين {summary.projectedWinnerCount} بدلاً من {summary.configuredTarget}</p><Button disabled={busy} onClick={() => void acceptAll()}>اعتماد جميع المتعادلين كفائزين</Button><Button disabled={busy || !actions.tie} onClick={() => void transition('tie')}>إجراء جولة فاصلة</Button></>}</section>}
         </>}
       </Card>
       <div className="admin-side">
-        <Card className="registration-card"><div className="card-heading"><div><p className="eyebrow">التسجيل</p><h2>رابط الدخول</h2></div><StatusPill>{state.registrationOpen ? 'مفتوح' : 'مغلق'}</StatusPill></div><div className="qr-wrap">{qr && <img src={qr} alt="رمز QR للتسجيل" />}</div><div className="qr-actions"><button onClick={copyJoin}><Copy /> نسخ الرابط</button><button onClick={downloadQr}><Download /> تحميل QR</button><button onClick={() => void act(() => adminSetRegistration(true), 'تم فتح التسجيل')}>فتح التسجيل</button><button onClick={() => void act(() => adminSetRegistration(false), 'تم إغلاق التسجيل')}>إغلاق التسجيل</button></div></Card>
+        <Card className="registration-card"><div className="card-heading"><div><p className="eyebrow">التسجيل</p><h2>رابط الدخول</h2></div><StatusPill>{state.registrationOpen ? 'مفتوح' : 'مغلق'}</StatusPill></div><div className="qr-wrap">{qr && <img src={qr} alt="رمز QR للتسجيل" />}</div><div className="qr-actions"><button onClick={copyJoin}><Copy /> نسخ الرابط</button><button onClick={downloadQr}><Download /> تحميل QR</button><button disabled={busy} onClick={() => void act(() => adminSetRegistration(true), 'تم فتح التسجيل')}>فتح التسجيل</button><button disabled={busy} onClick={() => void act(() => adminSetRegistration(false), 'تم إغلاق التسجيل')}>إغلاق التسجيل</button></div></Card>
         <Card className="safe-actions"><h3>إدارة الأمسية</h3><button onClick={() => void act(adminResetGames, 'تمت إعادة الألعاب إلى الردهة')}><RotateCcw /> إعادة ضبط الألعاب <small>يحفظ التسجيلات</small></button><button className="danger" onClick={() => window.confirm('سيتم حذف جميع التسجيلات والجلسات. هل أنت متأكد؟') && void act(adminClearRegistrations, 'تم حذف جميع التسجيلات')}><Trash2 /> حذف جميع التسجيلات <small>تأكيد إلزامي</small></button></Card>
       </div>
     </div>

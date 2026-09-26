@@ -36,6 +36,7 @@ export interface PublicEventState {
   registeredCount: number
   submittedCount: number
   tieEligiblePublicIds: string[]
+  tieEligibilityTags?: string[]
   winners: PublicWinner[]
   taifWinners: Array<{ participantPublicId: string; color: TaifColor }>
   revealedCorrectCount?: number

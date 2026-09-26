@@ -1,9 +1,22 @@
-import { cleanup, render, screen } from '@testing-library/react'
-import { afterEach, expect, it } from 'vitest'
+import { act, cleanup, render, screen } from '@testing-library/react'
+import { afterEach, expect, it, vi } from 'vitest'
 import { WinnerGrid } from './winner-grid'
 import type { PublicWinner } from '../types'
-afterEach(cleanup)
+afterEach(() => { cleanup(); vi.useRealTimers() })
 const winner: PublicWinner = { participantPublicId: 'winner-1', displayName: 'أحمد العبري', score: 1, guess: 36 }
+it('cycles all expanded winners in safe six-card pages without resetting on polling snapshots', () => {
+  vi.useFakeTimers()
+  const winners = Array.from({ length: 14 }, (_, i) => ({ ...winner, participantPublicId: 'p'+i, displayName: 'فائز '+i }))
+  const view = render(<WinnerGrid winners={winners} game="first_look" />)
+  act(() => vi.advanceTimersByTime(8000))
+  expect(screen.getByText('فائز 6')).toBeInTheDocument()
+  view.rerender(<WinnerGrid winners={structuredClone(winners)} game="first_look" />)
+  act(() => vi.advanceTimersByTime(8000))
+  expect(screen.getByText('فائز 13')).toBeInTheDocument()
+  expect(screen.getAllByRole('article')).toHaveLength(2)
+  act(() => vi.advanceTimersByTime(8000))
+  expect(screen.getByText('فائز 0')).toBeInTheDocument()
+})
 it.each([[-123, 'قبل الوقت المستهدف بـ', '0.123'], [83, 'بعد الوقت المستهدف بـ', '0.083'], [0, 'مطابق تمامًا', '0.000']])('formats signed delta %s without changing it', (signedDeltaMs, label, number) => {
   const data = { ...winner, signedDeltaMs }
   const snapshot = structuredClone(data)

@@ -1,14 +1,18 @@
 import { useState } from 'react'
 import { ArrowLeft, Check, KeyRound, Phone, UserRound } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { PageShell } from '../components/page-shell'
 import { Wordmark } from '../components/brand'
 import { Button, Card } from '../components/ui'
 import { recoverParticipant, registerParticipant } from '../lib/api'
-import { clearPendingRegistration, readPendingRegistration, saveSession } from '../lib/session'
+import { clearPendingRegistration, readPendingRegistration, readSession, saveSession } from '../lib/session'
+import { usePublicState } from '../hooks/use-public-state'
 
 export function JoinPage() {
   const navigate = useNavigate()
+  const { state, hydrated } = usePublicState()
+  const existingSession = readSession()
+  const registrationAllowed = hydrated && state.registrationOpen
   const [mode, setMode] = useState<'join' | 'recover'>('join')
   const [name, setName] = useState(() => readPendingRegistration()?.displayName ?? '')
   const [phone, setPhone] = useState(() => readPendingRegistration()?.phone ?? '')
@@ -43,7 +47,7 @@ export function JoinPage() {
       }
     } catch (reason) {
       const message = reason instanceof Error ? reason.message : 'حدث خطأ'
-      setError(message.includes('already_registered') ? 'هذا الرقم مسجل بالفعل. إذا سبق أن سجلت من هذا الجهاز، أعد المحاولة بنفس الرقم؛ وإلا استخدم استرجاع الدخول.' : message)
+      setError(message.includes('registration_closed') ? 'التسجيل مغلق حاليًا' : message.includes('already_registered') ? 'هذا الرقم مسجل بالفعل. إذا سبق أن سجلت من هذا الجهاز، أعد المحاولة بنفس الرقم؛ وإلا استخدم استرجاع الدخول.' : message)
     } finally {
       setBusy(false)
     }
@@ -72,14 +76,16 @@ export function JoinPage() {
         <button className={mode === 'join' ? 'active' : ''} onClick={() => setMode('join')}>تسجيل جديد</button>
         <button className={mode === 'recover' ? 'active' : ''} onClick={() => setMode('recover')}>استرجاع دخولي</button>
       </div>
-      <form onSubmit={submit}>
+      {existingSession && <Link to="/play">متابعة الأمسية</Link>}
+      {mode === 'join' && !registrationAllowed ? <div className="registration-closed" role="status"><h2>{hydrated ? 'التسجيل مغلق حاليًا' : 'جاري التحقق من التسجيل…'}</h2><p>إذا سبق أن سجلت، استخدم استرجاع دخولي.</p>{error && <p role="alert">{error}</p>}{readPendingRegistration() && <Button disabled={busy} onClick={() => void submit({ preventDefault() {} } as React.FormEvent)}>استرجاع التسجيل السابق</Button>}</div> : <form onSubmit={submit}>
         {mode === 'join' && <label><span>الاسم</span><div className="input-wrap"><UserRound /><input type="text" value={name} onChange={(event) => setName(event.target.value)} placeholder="اسمك على الشاشة" autoComplete="name" enterKeyHint="next" required /></div></label>}
         <label><span>رقم الهاتف</span><div className="input-wrap"><Phone /><input dir="ltr" type="tel" inputMode="tel" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="9XXX XXXX" autoComplete="tel" enterKeyHint={mode === 'join' ? 'done' : 'next'} required /></div></label>
         {mode === 'recover' && <label><span>رمز الدخول</span><div className="input-wrap"><KeyRound /><input dir="ltr" type="text" value={code} onChange={(event) => setCode(event.target.value.toUpperCase())} placeholder="XXXX-XXXX" autoComplete="one-time-code" autoCapitalize="characters" spellCheck={false} enterKeyHint="done" required /></div></label>}
         {error && <p className="form-error" role="alert">{error}</p>}
         <Button type="submit" disabled={busy}>{busy ? 'لحظة…' : mode === 'join' ? 'انضم الآن' : 'استرجاع الدخول'} <ArrowLeft size={20} /></Button>
-      </form>
+      </form>}
       <p className="privacy-note">نستخدم رقمك للتسجيل فقط، ولا يظهر لأي مشارك.</p>
     </Card>
+    <Link to="/admin/login" className="admin-entry">دخول الفريق / الإدارة</Link>
   </PageShell>
 }

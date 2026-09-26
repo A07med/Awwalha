@@ -75,20 +75,38 @@ export async function adminPrepareRound(input: {
 }
 
 async function publishScheduledRound(roundId: string) {
+  return publishPublicState({ roundId })
+}
+async function publishPublicState(input: { roundId: string } | { registrationOpen: boolean }) {
   const { data } = await supabase!.auth.getSession()
   const token = data.session?.access_token
-  if (!token) throw new Error('الجولة حُفظت؛ تعذر تأكيد نشرها للجمهور')
+  if (!token) throw new Error('التغيير حُفظ؛ تعذر تأكيد نشره للجمهور')
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      const response = await fetch('/api/publish-state', { method: 'POST', headers: { authorization: 'Bearer ' + token, 'content-type': 'application/json' }, body: JSON.stringify({ roundId }), signal: AbortSignal.timeout(6000) })
+      const response = await fetch('/api/publish-state', { method: 'POST', headers: { authorization: 'Bearer ' + token, 'content-type': 'application/json' }, body: JSON.stringify(input), signal: AbortSignal.timeout(6000) })
       if (response.ok && (await response.json()).published) return
     } catch { /* Keep the committed schedule; never create a duplicate round. */ }
     if (attempt === 0) await new Promise((resolve) => window.setTimeout(resolve, 500))
   }
-  throw new Error('الجولة حُفظت؛ تعذر تأكيد نشرها للجمهور')
+  throw new Error('التغيير حُفظ؛ تعذر تأكيد نشره للجمهور')
 }
 
-export const adminSetRegistration = (open: boolean) => rpc('admin_set_registration', { p_open: open, p_request_id: crypto.randomUUID() })
+export async function adminSetRegistration(open: boolean) {
+  const result = await rpc<{ registrationOpen: boolean }>('admin_set_registration', { p_open: open, p_request_id: crypto.randomUUID() })
+  await publishPublicState({ registrationOpen: result.registrationOpen })
+  return result
+}
+export interface FirstLookSummary {
+  roundId: string; submittedCount: number; configuredTarget: number; lockedCount: number;
+  cutoffScore: number | null; tiedCount: number; remainingSeats: number; projectedWinnerCount: number; tieNeeded: boolean;
+  groups: Array<{ score: number; count: number }>
+}
+export const adminFirstLookSummary = (roundId: string) => rpc<FirstLookSummary>('admin_first_look_result_summary', { p_round_id: roundId })
+export async function adminAcceptFirstLookTie(roundId: string, requestId: string) {
+  const result = await rpc('admin_accept_first_look_cutoff_tie', { p_round_id: roundId, p_request_id: requestId })
+  await publishScheduledRound(roundId)
+  return result
+}
 export const adminPrepareTaif = () => rpc<{ roundId: string }>('admin_prepare_taif', { p_request_id: crypto.randomUUID() })
 export const adminStartTaif = (roundId: string) => rpc<{ roundId: string; startsAt: string; revealAt: string; winnerCount: number }>('admin_start_taif', { p_round_id: roundId, p_request_id: crypto.randomUUID() })
 export const adminCloseRound = (roundId: string) => rpc('admin_close_round', { p_round_id: roundId, p_request_id: crypto.randomUUID() })

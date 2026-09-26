@@ -12,8 +12,9 @@ export default async function publishState(request: Request, bypassToken: string
   const authorization = request.headers.get('authorization')
   if (!authorization?.startsWith('Bearer ')) return reply(401)
   try {
-    const { roundId } = await request.json()
-    if (typeof roundId !== 'string' || !/^[a-f0-9-]{36}$/i.test(roundId)) return reply(400)
+    const { roundId, registrationOpen } = await request.json()
+    const registration = typeof registrationOpen === 'boolean'
+    if (!registration && (typeof roundId !== 'string' || !/^[a-f0-9-]{36}$/i.test(roundId))) return reply(400)
     const url = process.env.SUPABASE_URL
     const key = process.env.SUPABASE_ANON_KEY
     // Production's unique deployment hostname may require Vercel login, while
@@ -26,11 +27,12 @@ export default async function publishState(request: Request, bypassToken: string
     if (!/^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$/i.test(host) || host.includes('..')) return fail('invalid_runtime_host')
     // Existing require_admin() check; participant/anon JWTs cannot publish.
     stage = 'admin_check'
-    const admin = await fetch(url + '/rest/v1/rpc/admin_round_status', {
+    const admin = await fetch(url + '/rest/v1/rpc/' + (registration ? 'is_admin' : 'admin_round_status'), {
       method: 'POST', headers: { authorization, apikey: key, 'content-type': 'application/json' },
-      body: JSON.stringify({ p_round_id: roundId }), signal: AbortSignal.timeout(2000),
+      body: JSON.stringify(registration ? {} : { p_round_id: roundId }), signal: AbortSignal.timeout(2000),
     })
     if (!admin.ok) return fail('admin_check_rejected', admin.status >= 500 ? 503 : 403, admin.status)
+    if (registration && await admin.json() !== true) return fail('admin_check_rejected', 403)
     const cookie = request.headers.get('cookie')?.split(';').map((s) => s.trim()).find((s) => s.startsWith('_vercel_jwt='))
     const headers: Record<string, string> = { accept: 'application/json', 'x-prerender-revalidate': bypassToken }
     if (cookie) headers.cookie = cookie
@@ -40,7 +42,7 @@ export default async function publishState(request: Request, bypassToken: string
     if (!refreshed.ok) return fail('revalidation_http_error', 503, refreshed.status)
     stage = 'snapshot_validation'
     const state = await refreshed.json()
-    if (state.round?.id !== roundId) return fail('round_mismatch', 409)
+    if (registration ? state.registrationOpen !== registrationOpen : state.round?.id !== roundId) return fail('snapshot_mismatch', 409)
     return reply(200, true)
   } catch (reason) {
     return fail(reason instanceof Error && ['TimeoutError', 'AbortError'].includes(reason.name) ? 'upstream_timeout' : 'request_failed')
