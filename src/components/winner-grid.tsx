@@ -1,14 +1,15 @@
 import { Crown } from 'lucide-react'
+import type { CSSProperties } from 'react'
 import type { PublicWinner } from '../types'
 
 export function WinnerGrid({ winners, game }: { winners: PublicWinner[]; game: 'perfect_second' | 'first_look' }) {
-  return <div className={'winner-grid winners-' + winners.length}>
-    {winners.map((winner, index) => <article className="winner-card" key={winner.participantPublicId}>
-      <span className="winner-rank"><Crown size={20} /> {index + 1}</span>
+  return <div className={'winner-grid winner-reveal winners-' + winners.length}>
+    {winners.map((winner, index) => <article className={'winner-card reveal-card ' + (index === 0 ? 'first-place' : '')} key={winner.participantPublicId} style={{ '--reveal-delay': `${index * 100}ms` } as CSSProperties} aria-label={'المركز ' + (index + 1)}>
+      <div className="reveal-medal"><Crown aria-hidden="true" /><span className="reveal-rank">{['١', '٢', '٣', '٤', '٥', '٦'][index] ?? index + 1}</span></div>
       <h3>{winner.displayName}</h3>
       {game === 'perfect_second'
-        ? <strong dir="ltr">{(winner.signedDeltaMs ?? 0) >= 0 ? '+' : ''}{((winner.signedDeltaMs ?? 0) / 1000).toFixed(3)}s</strong>
-        : <strong>الإجابة {winner.guess} · الفرق {winner.score}</strong>}
+        ? <div className="reveal-timing"><span>{(winner.signedDeltaMs ?? 0) < 0 ? 'قبل الوقت المستهدف بـ' : (winner.signedDeltaMs ?? 0) > 0 ? 'بعد الوقت المستهدف بـ' : 'مطابق تمامًا'}</span><strong><b dir="ltr">{(Math.abs(winner.signedDeltaMs ?? 0) / 1000).toFixed(3)}</b> ثانية</strong></div>
+        : <div className="reveal-answer"><div><span>إجابته</span><strong>{winner.guess ?? '—'}</strong></div><div><span>الفارق</span><strong>{winner.score}</strong></div></div>}
     </article>)}
   </div>
 }

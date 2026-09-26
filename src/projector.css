@@ -39,10 +39,45 @@
 .projector-final { background: radial-gradient(ellipse at 20% 90%, #d8edcd55, transparent 48%), radial-gradient(ellipse at 80% 90%, #ffe4a455, transparent 48%), #faf6ff; }
 .projector-final h1 { font-size: clamp(70px, 8vw, 205px); padding: 4vw; }
 .projector-winners h1 { font-size: clamp(44px, 4vw, 105px); margin: 1vh 0 3vh; }
-.projector-winners .winner-grid { width: min(100%, 78vw); grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.5vw; }
-.projector-winners .winner-grid.winners-1 { grid-template-columns: minmax(0, 42vw); justify-content: center; }
-.projector-winners .winner-grid.winners-2 { grid-template-columns: repeat(2, minmax(0, 32vw)); justify-content: center; }
-.projector-winners .winner-card { min-width: 0; padding: 2vh 1vw; }
-.projector-winners .winner-card h3 { font-size: clamp(24px, 2vw, 48px); overflow-wrap: anywhere; }
-.projector-winners .winner-card strong { font-size: clamp(20px, 1.55vw, 38px); }
-.projector-winners .winner-rank { font-size: clamp(18px, 1.4vw, 32px); }
+.projector-winners .winner-grid { width: min(100%, 80vw); grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2vh 1.8vw; align-items: center; }
+.projector-winners .winner-grid.winners-1 { width: min(38vw, 760px); grid-template-columns: minmax(0, 1fr); }
+.projector-winners .winner-grid.winners-2 { width: min(70vw, 1600px); grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.projector-winners .winner-grid.winners-4 { width: min(70vw, 1600px); grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.projector-winners .winner-grid.winners-3 { direction: ltr; padding-top: 3vh; align-items: end; }
+.projector-winners .winners-3 .reveal-card { direction: rtl; grid-row: 1; }
+.projector-winners .winners-3 .reveal-card:nth-child(1) { grid-column: 2; margin-bottom: 3vh; }
+.projector-winners .winners-3 .reveal-card:nth-child(2) { grid-column: 1; }
+.projector-winners .winners-3 .reveal-card:nth-child(3) { grid-column: 3; }
+.projector-winners .reveal-card { min-width: 0; width: 100%; text-align: center; display: flex; flex-direction: column; align-items: center; gap: .8vh; padding: 1.8vh 1vw; border-radius: clamp(22px, 2vw, 48px); border: 1px solid #bc96e650; background: radial-gradient(ellipse at 50% 0%, #bc96e619, transparent 70%), #210b2ccc; box-shadow: 0 12px 45px #10041d55; animation: winner-enter 400ms both; animation-delay: var(--reveal-delay); }
+.projector-winners .reveal-card.first-place { border-color: #ffd1668c; background: radial-gradient(ellipse at 50% 0%, #ffd16622, transparent 65%), #210b2ccc; box-shadow: 0 0 50px #ffd16612, 0 18px 55px #10041d55; }
+.reveal-medal { display: flex; flex-direction: column; align-items: center; gap: .15em; color: #bc96e6; }
+.reveal-medal svg { width: 30px; height: 30px; }
+.reveal-rank { font-size: 1.4em; line-height: 1; }
+.reveal-card.first-place .reveal-medal { color: #ffd166; }
+.reveal-timing, .reveal-answer { display: flex; flex-direction: column; align-items: center; gap: .35em; }
+.reveal-timing > span, .reveal-answer span { color: #d4bedf; font-size: .85em; font-weight: 400; }
+.reveal-timing strong { display: block; }
+.reveal-timing b { font-weight: inherit; display: inline-block; font-variant-numeric: tabular-nums; }
+.reveal-answer { flex-direction: row; justify-content: center; gap: 2em; }
+.reveal-answer > div { display: flex; flex-direction: column; align-items: center; gap: .2em; }
+.projector-winners .reveal-medal svg { width: clamp(36px, 3.2vw, 82px); height: clamp(36px, 3.2vw, 82px); stroke-width: 1.5; }
+.projector-winners .reveal-rank { font: 700 clamp(25px, 2.4vw, 58px)/1 var(--font-display); }
+.projector-winners .reveal-card h3 { width: 100%; font: 800 clamp(28px, 2.5vw, 62px)/1.2 var(--font-display); text-align: center; margin: .25em 0; overflow-wrap: anywhere; color: #faf3ff; }
+.projector-winners .reveal-timing, .projector-winners .reveal-answer { font-size: clamp(20px, 1.4vw, 36px); }
+.projector-winners .reveal-card strong { font: 600 clamp(23px, 1.8vw, 46px)/1.2 var(--font-ui); color: #ffd166; }
+.projector-winners .winners-1 .reveal-card { padding: 3vh 2vw; gap: 1.2vh; }
+.projector-winners .winners-1 .reveal-card h3 { font-size: clamp(42px, 4.2vw, 105px); }
+.projector-winners .winners-1 .reveal-medal svg { width: clamp(65px, 5vw, 120px); height: clamp(65px, 5vw, 120px); }
+.projector-winners .winners-1 .reveal-timing, .projector-winners .winners-1 .reveal-answer { font-size: clamp(24px, 1.8vw, 46px); }
+.projector-winners .winners-1 .reveal-card strong { font-size: clamp(30px, 2.5vw, 64px); }
+.projector-winners .winners-3 .first-place h3 { font-size: clamp(32px, 2.8vw, 72px); }
+.projector-winners .winner-grid.winners-5 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.projector-winners .winners-5 .reveal-card { grid-column: span 2; }
+.projector-winners .winners-5 .reveal-card:nth-child(4) { grid-column: 2 / span 2; }
+.projector-winners .winners-5 .reveal-card:nth-child(5) { grid-column: 4 / span 2; }
+.projector-winners :is(.winners-4, .winners-5, .winners-6) .reveal-card { padding-block: 1.3vh; gap: .4vh; }
+.projector-winners :is(.winners-4, .winners-5, .winners-6) .reveal-medal svg { width: clamp(32px, 2.3vw, 60px); height: clamp(32px, 2.3vw, 60px); }
+.projector-winners :is(.winners-4, .winners-5, .winners-6) .reveal-rank { font-size: clamp(24px, 1.9vw, 50px); }
+.projector-winners :is(.winners-4, .winners-5, .winners-6) .reveal-card h3 { font-size: clamp(28px, 2.1vw, 54px); }
+@keyframes winner-enter { from { opacity: 0; transform: translateY(14px) scale(.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@media (prefers-reduced-motion: reduce) { .projector-winners .reveal-card { animation: none; } }

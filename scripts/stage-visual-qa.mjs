@@ -13,7 +13,7 @@ try { playwright = require('playwright') } catch {
 }
 const { chromium } = playwright
 const browser = await chromium.launch({ channel: 'chrome', headless: true })
-const out = 'screenshots/projector'
+const out = process.env.STAGE_QA_SCENE === 'winners' ? 'screenshots/winners' : 'screenshots/projector'
 mkdirSync(out, { recursive: true })
 const cases = [
   ['perfect_second','idle'], ['perfect_second','countdown'], ['perfect_second','visible'], ['perfect_second','hidden'], ['perfect_second','winners'],
@@ -21,7 +21,7 @@ const cases = [
   ['taif','preparing'], ['taif','active'], ['taif','final'],
 ]
 const report = []
-for (const size of [[1920,1080],[1366,768],[2560,1440]]) for (const [game, scene] of cases.filter(([,scene]) => !process.env.STAGE_QA_SCENE || scene === process.env.STAGE_QA_SCENE)) {
+for (const size of [[1920,1080],[1366,768],[2560,1440]]) for (const [game, scene] of cases.filter(([,scene]) => !process.env.STAGE_QA_SCENE || scene === process.env.STAGE_QA_SCENE)) for (const winnerCount of (scene === 'winners' && process.env.STAGE_QA_SCENE === 'winners' ? [1,2,3,4,5,6] : [6])) {
   const page = await browser.newPage({ viewport: { width: size[0], height: size[1] } })
   const errors = []; let detailCalls = 0
   page.on('pageerror', e => errors.push(e.message))
@@ -34,7 +34,7 @@ for (const size of [[1920,1080],[1366,768],[2560,1440]]) for (const [game, scene
       const elapsed = { countdown: -3000, visible: 300, hidden: 2200, visual: 0, question: 3000, active: 500, final: 7000, preparing: -604000000 }[scene] ?? 0
       const startsAt = Date.now() - elapsed
       const phase = scene === 'winners' || scene === 'final' ? 'revealed' : scene === 'preparing' ? 'preparing' : 'active'
-      const winners = Array.from({length:6}, (_,i) => ({participantPublicId:'fixture-'+i,displayName:['أحمد سالم','مريم علي','سارة محمد','خالد حسن','نور عبدالله','عمر سعيد'][i],score:2,signedDeltaMs:i % 2 ? -2 : 2,guess:36}))
+      const winners = Array.from({length:winnerCount}, (_,i) => ({participantPublicId:'fixture-'+i,displayName:['أحمد العبري','مريم علي','سارة محمد','خالد حسن','نور عبدالله','عمر سعيد'][i],score:1,signedDeltaMs:i % 2 ? -123 : 83,guess:36}))
       return route.fulfill({ json: { stateVersion: 1, registrationOpen: false, currentGame: scene === 'idle' ? null : game, phase, registeredCount: 750, submittedCount: 512,
         round: scene === 'idle' ? null : { id:'33333333-3333-4333-8333-333333333333',gameType:game,phase,startsAt:new Date(startsAt).toISOString(),closesAt:new Date(startsAt+12000).toISOString(),revealAt:new Date(startsAt+6000).toISOString(),targetMs:6000,hideTimerAfterMs:1500,displayDurationMs:1800,winnerTargetCount:6,seatsAvailable:6 },
         winners:scene === 'winners' ? winners : [],taifWinners:scene === 'final' ? Array.from({length:4},(_,i)=>({participantPublicId:'fixture-'+i,color:i<2?'green':'yellow'})):[],tieEligiblePublicIds:[],serverPublishedAt:new Date().toISOString() } })
@@ -53,6 +53,7 @@ for (const size of [[1920,1080],[1366,768],[2560,1440]]) for (const [game, scene
   else if (game === 'perfect_second' && scene !== 'idle') await page.locator('.projector-timer').waitFor()
   else if (scene === 'question') await page.locator('.projector-question').waitFor()
   await page.evaluate(() => document.fonts.ready)
+  if (scene === 'winners') await page.waitForTimeout(950)
   const layout = await page.evaluate(() => {
     const r = el => { const b=el.getBoundingClientRect();return{x:b.x,y:b.y,width:b.width,height:b.height,right:b.right,bottom:b.bottom} }
     const content=document.querySelector('.projector-canvas > *, .projector-final h1')
@@ -66,10 +67,10 @@ for (const size of [[1920,1080],[1366,768],[2560,1440]]) for (const [game, scene
   if(scene==='visual')assert.equal(layout.icons,36)
   assert.equal(errors.length,0)
   assert.equal(detailCalls,game==='first_look'&&scene!=='idle'?1:0)
-  const file=out+'/'+size.join('x')+'-'+game+'-'+scene+'.png'
+  const file=out+'/'+size.join('x')+'-'+game+'-'+scene+(scene === 'winners' ? '-'+winnerCount : '')+'.png'
   await page.screenshot({path:file})
-  report.push({size,game,scene,...layout,detailCalls,errors,file})
-  console.log('PASS',size.join('x'),game,scene)
+  report.push({size,game,scene,winnerCount,...layout,detailCalls,errors,file})
+  console.log('PASS',size.join('x'),game,scene,scene==='winners'?winnerCount:'')
   await page.close()
 }
 writeFileSync(out+'/report'+(process.env.STAGE_QA_SCENE ? '-'+process.env.STAGE_QA_SCENE : '')+'.json',JSON.stringify(report,null,2))
