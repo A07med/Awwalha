@@ -1,6 +1,7 @@
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { randomBytes, randomUUID } from 'node:crypto'
+import { scheduledInteractionActive } from '../src/lib/scheduled-activation.ts'
 
 const run = promisify(execFile)
 // Verify deployment metadata (target=null, staging, expected SHA) before running.
@@ -228,14 +229,17 @@ async function combined() {
 async function admin(sql) {
   return (await db(`select set_config('request.jwt.claims','{"sub":"${adminId}","role":"authenticated"}',false); ${sql}`))[0]?.value
 }
-async function waitForClientRound(states, roundId, i, deadline) {
+async function waitForClientRound(states, roundId, i, deadline, publicId) {
   while (Date.now() < deadline) {
-    if (states[i]?.round?.id === roundId && states[i]?.round?.phase === 'active') return true
+    const s = states[i]
+    if (s?.round?.id === roundId && (mode === 'diagnostic750'
+      ? s.round.phase === 'active'
+      : scheduledInteractionActive(s, roundId, Date.now() - Date.parse(s.round.startsAt), publicId))) return true
     await sleep(100)
   }
   return false
 }
-async function fullFlow(n) {
+async function fullFlow(n, focused = false) {
   if (![500, 750, 1000, 1500, 2000].includes(n)) throw new Error('Unsupported full-flow tier')
   const phoneBase = { 500: 99700000, 750: 99701000, 1000: 99702000, 1500: 99704000, 2000: 99706000 }[n]
   const required = Math.ceil(n * .99)
@@ -263,6 +267,9 @@ async function fullFlow(n) {
   const lastStates = Array(n).fill(null)
   const submitted = Array(n).fill(null)
   const ready = Array(n).fill(false)
+  const observed = Array.from({ length: n }, () => new Map())
+  const activations = Array.from({ length: n }, () => new Map())
+  let activationTimer
   const cacheSummary = () => Object.fromEntries([...new Set(stateRecords.map((r) => String(r.cache)))].map((key) => [key, stateRecords.filter((r) => String(r.cache) === key).length]))
   const errorSummary = (records) => ({ status429: records.filter((r) => r.status === 429).length, fiveXX: records.filter((r) => typeof r.status === 'number' && r.status >= 500).length, status503: records.filter((r) => r.status === 503).length, status504: records.filter((r) => r.status === 504).length, status520: records.filter((r) => r.status === 520).length, status522: records.filter((r) => r.status === 522).length, sql57014: records.filter((r) => r.code === '57014').length, tooManyConnections: records.filter((r) => /too_many_connections|too many connections|remaining connection slots/i.test(String(r.value?.message ?? ''))).length })
   const args = Array.from({ length: n }, (_, i) => credentials(phoneBase, i, 'D'))
@@ -279,9 +286,18 @@ async function fullFlow(n) {
       while (!stopPoll) {
         const r = await previewRequest('/api/state', true)
         stateRecords.push(r)
-        if (r.ok && (!lastStates[i] || r.value.stateVersion > lastStates[i].stateVersion)) lastStates[i] = r.value
+        if (r.ok && (!lastStates[i] || r.value.stateVersion > lastStates[i].stateVersion)) {
+          lastStates[i] = r.value
+          const incoming = r.value.round
+          if (incoming) {
+            const prior = observed[i].get(incoming.id) ?? { firstSeenAt: Date.now(), startsAt: incoming.startsAt, firstPhase: incoming.phase }
+            if (incoming.phase === 'active' && !prior.activeAt) prior.activeAt = Date.now()
+            observed[i].set(incoming.id, prior)
+          }
+        }
         const round = lastStates[i]?.round
-        while (!stopPoll && round?.phase === 'active' && round.gameType !== 'taif' && submitted[i] !== round.id && lastStates[i]?.round?.id === round.id) await sleep(150)
+        while (!stopPoll && round && round.gameType !== 'taif' && submitted[i] !== round.id && lastStates[i]?.round?.id === round.id &&
+          (mode === 'diagnostic750' ? round.phase === 'active' : scheduledInteractionActive(lastStates[i], round.id, Date.now() - Date.parse(round.startsAt), registrations[i]?.value?.participantPublicId ?? ''))) await sleep(150)
         const phase = lastStates[i]?.phase
         const isWahajReady = ready[i] && lastStates[i]?.currentGame === 'taif'
         const submittedCurrentRound = submitted[i] === round?.id
@@ -290,6 +306,14 @@ async function fullFlow(n) {
         await sleep(baseDelay + Math.random() * span)
       }
     })())
+    activationTimer = setInterval(() => {
+      for (let i = 0; i < n; i++) {
+        const s = lastStates[i], round = s?.round
+        if (round && !activations[i].has(round.id) && scheduledInteractionActive(s, round.id, Date.now() - Date.parse(round.startsAt), registrations[i]?.value?.participantPublicId ?? '')) {
+          activations[i].set(round.id, { at: Date.now(), path: round.phase === 'active' ? 'server' : 'local' })
+        }
+      }
+    }, 16)
     await Promise.all(args.map(async (item, i) => {
       await sleep(Math.random() * 8000)
       registrations[i] = await supabaseRpc('register_participant', item)
@@ -305,11 +329,22 @@ async function fullFlow(n) {
     await sleep(Math.max(0, Date.parse(perfectRound.startsAt) - Date.now() + 6000))
     const perfect = await Promise.all(args.map(async (item, i) => {
       await sleep(Math.random() * 900)
-      if (!(await waitForClientRound(lastStates, perfectRound.roundId, i, Date.parse(perfectRound.startsAt) + 7500))) return { ok: false, status: 'ROUND_NOT_VISIBLE', ms: 0 }
+      if (!(await waitForClientRound(lastStates, perfectRound.roundId, i, Date.parse(perfectRound.startsAt) + 7500, registrations[i]?.value?.participantPublicId))) return { ok: false, status: 'ROUND_NOT_VISIBLE', ms: 0 }
       submitted[i] = perfectRound.roundId
       return supabaseRpc('submit_perfect_second', { p_session_token: item.p_session_token, p_round_id: perfectRound.roundId, p_elapsed_ms: 6000 + i % 850, p_timing_metadata: { visibilityState: 'visible', clock: 'performance.now', loadTest: true } })
     }))
     console.log(JSON.stringify({ phase: 'full-perfect', tier: n, perfect: summarize(perfect), state: summarize(stateRecords), at: new Date().toISOString() }))
+    const knowledge = perfect.map((r, i) => ({ client: i, success: r.ok, ...observed[i].get(perfectRound.roundId), activation: activations[i].get(perfectRound.roundId) }))
+    const knewBefore = knowledge.filter((r) => r.firstSeenAt < Date.parse(perfectRound.startsAt)).length
+    const local = knowledge.filter((r) => r.activation?.path === 'local').length
+    const server = knowledge.filter((r) => r.activation?.path === 'server').length
+    const attemptCounts = (await db(`select count(*)::integer attempts,count(distinct participant_id)::integer unique_participants from public.perfect_second_attempts where round_id='${perfectRound.roundId}'`))[0]
+    console.log(JSON.stringify({ phase: 'activation-evidence', tier: n, startsAt: perfectRound.startsAt, knewBefore, unknownBefore: n-knewBefore, local, server, attemptCounts, failed: knowledge.filter((r) => !r.success), maxActivationDelayMs: Math.max(...knowledge.map((r) => r.activation ? r.activation.at-Date.parse(perfectRound.startsAt) : -1)) }))
+    if (focused) {
+      const after = await stateSqlStats()
+      console.log(JSON.stringify({ phase: 'focused-result', pass: knewBefore === n && local+server === n && perfect.every((r) => r.ok) && attemptCounts.attempts === n && attemptCounts.unique_participants === n && stateRecords.every((r) => r.ok), active: local+server, local, server, knewBefore, submissions: summarize(perfect), state: summarize(stateRecords), upstreamCalls: Number(after.calls)-Number(sqlBefore.state.calls), errors: errorSummary([...site,...registrations,...perfect,...stateRecords]) }))
+      return
+    }
     if (summarize(perfect).success < required || stateRecords.some((r) => !r.ok)) throw new Error('Full-flow Perfect Second/state gate failed')
     await admin(`select public.admin_close_round('${perfectRound.roundId}'::uuid,'${randomUUID()}'::uuid) as value`)
     await sleep(3300)
@@ -320,7 +355,7 @@ async function fullFlow(n) {
     await sleep(Math.max(0, Date.parse(firstRound.startsAt) - Date.now() + 3500))
     const first = await Promise.all(args.map(async (item, i) => {
       await sleep(Math.random() * 900)
-      if (!(await waitForClientRound(lastStates, firstRound.roundId, i, Date.parse(firstRound.startsAt) + 10000))) return { ok: false, status: 'ROUND_NOT_VISIBLE', ms: 0 }
+      if (!(await waitForClientRound(lastStates, firstRound.roundId, i, Date.parse(firstRound.startsAt) + 10000, registrations[i]?.value?.participantPublicId))) return { ok: false, status: 'ROUND_NOT_VISIBLE', ms: 0 }
       submitted[i] = firstRound.roundId
       return supabaseRpc('submit_first_look', { p_session_token: item.p_session_token, p_round_id: firstRound.roundId, p_guess: i < 6 ? 47 + i : 100 + i % 900 })
     }))
@@ -369,6 +404,7 @@ async function fullFlow(n) {
     const after = await stateSqlStats()
     console.log(JSON.stringify({ phase: 'full-failed', tier: n, reason: String(error?.message ?? error), site: summarize(site), state: summarize(stateRecords), cache: cacheSummary(), upstreamStateCalls: Number(after.calls) - Number(sqlBefore.state.calls), upstreamStateSqlMs: Number(after.total_exec_time) - Number(sqlBefore.state.total_exec_time), registration: summarize(registrations), errors: errorSummary([...site, ...stateRecords, ...registrations]) }))
   } finally {
+    clearInterval(activationTimer)
     stopPoll = true
     await Promise.all(pollers)
     if (created) {
@@ -385,8 +421,9 @@ else if (mode === 'registration') await registrationOnly()
 else if (mode === 'combined') await combined()
 else if (mode === 'full500') await fullFlow(500)
 else if (mode === 'full750') await fullFlow(750)
+else if (mode === 'diagnostic750') await fullFlow(750, true)
+else if (mode === 'focused750') await fullFlow(750, true)
 else if (mode === 'full1000') await fullFlow(1000)
 else if (mode === 'full1500') await fullFlow(1500)
 else if (mode === 'full2000') await fullFlow(2000)
 else throw new Error('Unsupported mode: ' + mode)
-

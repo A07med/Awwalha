@@ -10,6 +10,7 @@ import { readSession } from '../lib/session'
 import { perfectSecondScore } from '../lib/ranking'
 import { useClockSync } from '../hooks/use-clock-sync'
 import { TaifScreen } from '../components/taif-screen'
+import { scheduledInteractionActive } from '../lib/scheduled-activation'
 
 type SubmissionStatus = 'idle' | 'locally_submitted' | 'submitting' | 'confirmed' | 'failed'
 
@@ -104,8 +105,10 @@ export function PlayPage() {
   const currentRoundIdRef = useRef<string | null>(round?.id ?? null)
   currentRoundIdRef.current = round?.id ?? null
   const offsetMs = useClockSync(Boolean(round?.startsAt))
-  const { elapsedMs } = useScheduledClock(round?.startsAt, offsetMs)
-  const active = round?.phase === 'active' && elapsedMs >= 0
+  const { elapsedMs } = useScheduledClock(round?.startsAt, offsetMs, round?.id ?? null)
+  const active = round?.gameType === 'taif'
+    ? round.phase === 'active' && elapsedMs >= 0
+    : scheduledInteractionActive(state, round?.id ?? null, elapsedMs, session.participantPublicId)
   const taifRevealElapsedMs = round?.revealAt && round.startsAt ? Date.parse(round.revealAt) - Date.parse(round.startsAt) : 6000
   useTaifRevealRefresh(round?.gameType === 'taif' && active && elapsedMs >= taifRevealElapsedMs && state.taifWinners.length !== 4 ? round.id : null, refreshAtTaifReveal)
   useEffect(() => setTimingCritical(Boolean(active && !submitted && round?.gameType !== 'taif')), [active, submitted, round?.gameType])
@@ -164,7 +167,7 @@ export function PlayPage() {
   }
 
   function stop() {
-    if (!round || attemptLockRef.current || !active) return
+    if (!round || attemptLockRef.current || !active || isTieSpectator) return
     attemptLockRef.current = round.id
     const capturedElapsedMs = Math.max(0, elapsedMs)
     const own = perfectSecondScore(capturedElapsedMs, round.targetMs ?? 6000)
@@ -179,7 +182,7 @@ export function PlayPage() {
 
   function confirmGuess(event: React.FormEvent) {
     event.preventDefault()
-    if (!round || attemptLockRef.current || !active || !/^\d+$/.test(guess)) return
+    if (!round || attemptLockRef.current || !active || isTieSpectator || !/^\d+$/.test(guess)) return
     attemptLockRef.current = round.id
     queueAttempt({ kind: 'first_look', roundId: round.id, guess: Number(guess) })
   }

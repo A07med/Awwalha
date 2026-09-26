@@ -190,3 +190,39 @@ describe('First Look submission UX', () => {
     expect(await screen.findByText('تم التأكيد ✓')).toBeInTheDocument()
   })
 })
+
+describe('scheduled activation without a fresh poll', () => {
+  it.each(['perfect_second', 'first_look'] as const)('activates known %s at the synchronized start, without changing the snapshot', (game) => {
+    mocks.state = structuredClone(game === 'perfect_second' ? demoPerfectState : demoFirstLookState)
+    mocks.state.phase = 'preparing'
+    mocks.state.round!.phase = 'preparing'
+    mocks.elapsedMs = -1
+    const view = render(<PlayPage />)
+    const label = game === 'perfect_second' ? 'STOP' : 'تأكيد'
+    expect(screen.getByRole('button', { name: label })).toBeDisabled()
+    mocks.elapsedMs = 0
+    view.rerender(<PlayPage />)
+    expect(screen.getByRole('button', { name: label })).toBeEnabled()
+    expect(mocks.state.round!.phase).toBe('preparing')
+    mocks.elapsedMs = 2000
+    view.rerender(<PlayPage />)
+    expect(screen.getByRole('button', { name: label })).toBeEnabled()
+    // Identical/slow preparing snapshots cannot roll local activation back.
+    mocks.state = structuredClone(mocks.state)
+    view.rerender(<PlayPage />)
+    expect(screen.getByRole('button', { name: label })).toBeEnabled()
+  })
+
+  it('keeps one immutable attempt when STOP is activated from preparing', async () => {
+    mocks.state = structuredClone(demoPerfectState)
+    mocks.state.phase = mocks.state.round!.phase = 'preparing'
+    mocks.elapsedMs = 6000
+    mocks.submitPerfectSecond.mockReturnValue(new Promise(() => {}))
+    render(<PlayPage />)
+    const stop = screen.getByRole('button', { name: 'STOP' })
+    fireEvent.pointerDown(stop)
+    fireEvent.click(stop)
+    await waitFor(() => expect(mocks.submitPerfectSecond).toHaveBeenCalledTimes(1))
+    expect(mocks.submitPerfectSecond.mock.calls[0][2]).toBe(6000)
+  })
+})

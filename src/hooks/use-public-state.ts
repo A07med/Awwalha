@@ -70,6 +70,7 @@ export function usePublicState(options: PollOptions = {}, demoState = demoLobbyS
         schedule()
       }, pollingDelay({
         ...optionsRef.current,
+        phase: lastFetchedRef.current?.phase ?? optionsRef.current.phase,
         taifReady: optionsRef.current.taifReady ||
           (lastFetchedRef.current?.currentGame === 'taif' && lastFetchedRef.current.round?.phase === 'active'),
       }, failureRef.current))

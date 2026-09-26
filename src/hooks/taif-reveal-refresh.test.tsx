@@ -21,6 +21,18 @@ afterEach(() => {
 })
 
 describe('Taif reveal refresh', () => {
+  it('uses the received preparing phase for faster jittered polls without a second loop', async () => {
+    const preparing = { ...structuredClone(demoTaifState), phase: 'preparing' as const, round: { ...demoTaifState.round!, phase: 'preparing' as const } }
+    mocks.fetchPublicState.mockResolvedValue(preparing)
+    const view = renderHook(() => usePublicState())
+    await act(async () => { await Promise.resolve() })
+    expect(mocks.fetchPublicState).toHaveBeenCalledTimes(1)
+    await act(async () => { await vi.advanceTimersByTimeAsync(1999) })
+    expect(mocks.fetchPublicState).toHaveBeenCalledTimes(1)
+    await act(async () => { await vi.advanceTimersByTimeAsync(1) })
+    expect(mocks.fetchPublicState).toHaveBeenCalledTimes(2)
+    view.unmount()
+  })
   it('retains a valid active screen on a failed poll without resubmitting or resetting', async () => {
     const valid = { ...structuredClone(demoTaifState), stateVersion: 100 }
     mocks.fetchPublicState.mockResolvedValueOnce(valid).mockRejectedValueOnce(new Error('temporary refresh failure'))
