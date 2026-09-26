@@ -59,7 +59,7 @@ export async function joinTaifRound(token: string, roundId: string) {
 export async function adminPrepareRound(input: {
   gameType: 'perfect_second' | 'first_look'; winnerCount: number; targetMs?: number; hideTimerAfterMs?: number; correctCount?: number; visualSeed?: number; visualCategory?: string; displayDurationMs?: number
 }) {
-  return rpc<{ roundId: string; startsAt: string }>('admin_prepare_round', {
+  const round = await rpc<{ roundId: string; startsAt: string }>('admin_prepare_round', {
     p_request_id: crypto.randomUUID(),
     p_game_type: input.gameType,
     p_winner_target_count: input.winnerCount,
@@ -70,6 +70,22 @@ export async function adminPrepareRound(input: {
     p_visual_category: input.visualCategory ?? null,
     p_display_duration_ms: input.displayDurationMs ?? null,
   })
+  await publishScheduledRound(round.roundId)
+  return round
+}
+
+async function publishScheduledRound(roundId: string) {
+  const { data } = await supabase!.auth.getSession()
+  const token = data.session?.access_token
+  if (!token) throw new Error('الجولة حُفظت؛ تعذر تأكيد نشرها للجمهور')
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const response = await fetch('/api/publish-state', { method: 'POST', headers: { authorization: 'Bearer ' + token, 'content-type': 'application/json' }, body: JSON.stringify({ roundId }), signal: AbortSignal.timeout(6000) })
+      if (response.ok && (await response.json()).published) return
+    } catch { /* Keep the committed schedule; never create a duplicate round. */ }
+    if (attempt === 0) await new Promise((resolve) => window.setTimeout(resolve, 500))
+  }
+  throw new Error('الجولة حُفظت؛ تعذر تأكيد نشرها للجمهور')
 }
 
 export const adminSetRegistration = (open: boolean) => rpc('admin_set_registration', { p_open: open, p_request_id: crypto.randomUUID() })
@@ -77,7 +93,11 @@ export const adminPrepareTaif = () => rpc<{ roundId: string }>('admin_prepare_ta
 export const adminStartTaif = (roundId: string) => rpc<{ roundId: string; startsAt: string; revealAt: string; winnerCount: number }>('admin_start_taif', { p_round_id: roundId, p_request_id: crypto.randomUUID() })
 export const adminCloseRound = (roundId: string) => rpc('admin_close_round', { p_round_id: roundId, p_request_id: crypto.randomUUID() })
 export const adminResolveRound = (roundId: string) => rpc('admin_resolve_round', { p_round_id: roundId, p_request_id: crypto.randomUUID() })
-export const adminStartTieBreak = (roundId: string) => rpc('admin_start_tie_break', { p_parent_round_id: roundId, p_request_id: crypto.randomUUID() })
+export const adminStartTieBreak = async (roundId: string) => {
+  const round = await rpc<{ roundId: string }>('admin_start_tie_break', { p_parent_round_id: roundId, p_request_id: crypto.randomUUID() })
+  await publishScheduledRound(round.roundId)
+  return round
+}
 export const adminRevealWinners = (roundId: string) => rpc('admin_reveal_winners', { p_round_id: roundId, p_request_id: crypto.randomUUID() })
 export const adminResetGames = () => rpc('admin_reset_games', { p_request_id: crypto.randomUUID() })
 export const adminClearRegistrations = () => rpc('admin_clear_registrations', { p_request_id: crypto.randomUUID(), p_confirmation: 'DELETE ALL REGISTRATIONS' })

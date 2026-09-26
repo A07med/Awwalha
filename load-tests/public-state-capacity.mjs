@@ -10,6 +10,7 @@ const supabase = 'https://segymjevvgjywvqqjgyk.supabase.co'
 const cookie = process.env.PREVIEW_COOKIE
 const anon = process.env.SUPABASE_ANON_KEY
 const adminId = '11111111-2222-3333-4444-555555555555'
+let adminBearer
 const mode = process.argv[2]
 if (!cookie || !anon || !base || !/^https:\/\/awwalha-[a-z0-9]+-ahmeds-projects-829f0693\.vercel\.app$/.test(base)) throw new Error('Missing/unsafe staging-only test configuration')
 
@@ -227,7 +228,15 @@ async function combined() {
 }
 
 async function admin(sql) {
-  return (await db(`select set_config('request.jwt.claims','{"sub":"${adminId}","role":"authenticated"}',false); ${sql}`))[0]?.value
+  const value = (await db(`select set_config('request.jwt.claims','{"sub":"${adminId}","role":"authenticated"}',false); ${sql}`))[0]?.value
+  if (sql.includes('admin_prepare_round(') && mode !== 'diagnostic750') {
+    const started = performance.now()
+    const response = await fetch(base + '/api/publish-state', { method: 'POST', headers: { cookie, authorization: 'Bearer ' + adminBearer, 'content-type': 'application/json' }, body: JSON.stringify({ roundId: value.roundId }), signal: AbortSignal.timeout(6000) })
+    const publication = await response.json()
+    console.log(JSON.stringify({ phase: 'scheduled-publication', status: response.status, published: publication.published, ms: performance.now()-started, leadMs: Date.parse(value.startsAt)-Date.now() }))
+    if (!response.ok || !publication.published) throw new Error('Operator publication not confirmed')
+  }
+  return value
 }
 async function waitForClientRound(states, roundId, i, deadline, publicId) {
   while (Date.now() < deadline) {
@@ -274,8 +283,13 @@ async function fullFlow(n, focused = false) {
   const errorSummary = (records) => ({ status429: records.filter((r) => r.status === 429).length, fiveXX: records.filter((r) => typeof r.status === 'number' && r.status >= 500).length, status503: records.filter((r) => r.status === 503).length, status504: records.filter((r) => r.status === 504).length, status520: records.filter((r) => r.status === 520).length, status522: records.filter((r) => r.status === 522).length, sql57014: records.filter((r) => r.code === '57014').length, tooManyConnections: records.filter((r) => /too_many_connections|too many connections|remaining connection slots/i.test(String(r.value?.message ?? ''))).length })
   const args = Array.from({ length: n }, (_, i) => credentials(phoneBase, i, 'D'))
   try {
-    await db(`insert into auth.users(id,instance_id,aud,role,email,encrypted_password,email_confirmed_at) values ('${adminId}','00000000-0000-0000-0000-000000000000','authenticated','authenticated','final-loadtest@awwalha.invalid','x',now()); insert into public.admin_profiles(user_id,display_name) values ('${adminId}','Final Preview Load Test'); select true as created`)
+    const password = randomBytes(24).toString('hex')
+    await db(`insert into auth.users(id,instance_id,aud,role,email,encrypted_password,email_confirmed_at,confirmation_token,recovery_token,email_change_token_new,email_change) values ('${adminId}','00000000-0000-0000-0000-000000000000','authenticated','authenticated','final-loadtest@awwalha.invalid',extensions.crypt('${password}',extensions.gen_salt('bf')),now(),'','','',''); insert into public.admin_profiles(user_id,display_name) values ('${adminId}','Final Preview Load Test'); select true as created`)
     created = true
+    const auth = await fetch(supabase + '/auth/v1/token?grant_type=password', { method: 'POST', headers: { apikey: anon, 'content-type': 'application/json' }, body: JSON.stringify({ email: 'final-loadtest@awwalha.invalid', password }), signal: AbortSignal.timeout(10000) })
+    const signedIn = await auth.json()
+    if (!auth.ok || !signedIn.access_token) throw new Error('Temporary staging admin could not authenticate: ' + (signedIn.error_code ?? auth.status))
+    adminBearer = signedIn.access_token
     await admin(`select public.admin_set_registration(true,'${randomUUID()}'::uuid) as value`)
     console.log(JSON.stringify({ phase: 'full-site-start', tier: n, at: new Date().toISOString() }))
     await Promise.all(Array.from({ length: n }, (_, i) => (async () => {
@@ -404,6 +418,7 @@ async function fullFlow(n, focused = false) {
     const after = await stateSqlStats()
     console.log(JSON.stringify({ phase: 'full-failed', tier: n, reason: String(error?.message ?? error), site: summarize(site), state: summarize(stateRecords), cache: cacheSummary(), upstreamStateCalls: Number(after.calls) - Number(sqlBefore.state.calls), upstreamStateSqlMs: Number(after.total_exec_time) - Number(sqlBefore.state.total_exec_time), registration: summarize(registrations), errors: errorSummary([...site, ...stateRecords, ...registrations]) }))
   } finally {
+    adminBearer = undefined
     clearInterval(activationTimer)
     stopPoll = true
     await Promise.all(pollers)
