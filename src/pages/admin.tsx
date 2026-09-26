@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import QRCode from 'qrcode'
 import { Copy, Download, Eye, Gauge, Play, RotateCcw, Settings2, ShieldCheck, TimerReset, Trash2, UsersRound } from 'lucide-react'
 import { PageShell } from '../components/page-shell'
@@ -6,10 +6,18 @@ import { Button, Card, Metric, StatusPill } from '../components/ui'
 import { TaifMark } from '../components/taif-mark'
 import { demoLobbyState } from '../lib/demo-state'
 import { usePublicState } from '../hooks/use-public-state'
+import { useOperatorRoundStatus } from '../hooks/use-operator-round-status'
+import { adminErrorMessage, adminRoundActions } from '../lib/admin-actions'
 import { adminClearRegistrations, adminCloseRound, adminPrepareRound, adminPrepareTaif, adminResetGames, adminRevealWinners, adminSetRegistration, adminStartTaif, adminStartTieBreak, adminResolveRound } from '../lib/api'
 
 export function AdminPage() {
-  const { state } = usePublicState({ phase: 'lobby', operator: true }, demoLobbyState)
+  const { state, refresh, setState } = usePublicState({ phase: 'lobby', operator: true }, demoLobbyState)
+  const operatorCount = useOperatorRoundStatus(state.round?.id ?? null)
+  const submittedCount = operatorCount ?? state.submittedCount
+  const [closedRoundId, setClosedRoundId] = useState<string | null>(null)
+  const actions = adminRoundActions(state, closedRoundId === state.round?.id)
+  const [busy, setBusy] = useState(false)
+  const busyRef = useRef(false)
   const [tab, setTab] = useState<'perfect' | 'look' | 'taif'>('perfect')
   const [winners, setWinners] = useState(3)
   const [target, setTarget] = useState('6.000')
@@ -23,10 +31,33 @@ export function AdminPage() {
 
   function flash(message: string) { setNotice(message); window.setTimeout(() => setNotice(''), 2400) }
   async function act(action: () => Promise<unknown>, demoMessage: string) {
+    if (busyRef.current) return
+    busyRef.current = true
+    setBusy(true)
     try {
       if (import.meta.env.VITE_APP_MODE === 'supabase') await action()
       flash(demoMessage)
-    } catch (reason) { flash(reason instanceof Error ? reason.message : 'تعذر تنفيذ الإجراء') }
+    } catch (reason) { flash(adminErrorMessage(reason)) }
+    finally { await refresh(); busyRef.current = false; setBusy(false) }
+  }
+  async function transition(kind: 'close' | 'resolve' | 'tie' | 'reveal') {
+    if (!state.round || !actions[kind] || busyRef.current) return
+    const roundId = state.round.id
+    await act(async () => {
+      if (kind === 'tie') return adminStartTieBreak(roundId)
+      const result = kind === 'close' ? await adminCloseRound(roundId)
+        : kind === 'resolve' ? await adminResolveRound(roundId) : await adminRevealWinners(roundId)
+      const resolution = result as { tiedCount?: number; remainingSeats?: number }
+      const phase = kind === 'close' ? 'closed' : kind === 'reveal' ? 'revealed' : 'resolved'
+      if (kind === 'close') setClosedRoundId(roundId)
+      const tieNeeded = kind === 'resolve' && (resolution.tiedCount ?? 0) > (resolution.remainingSeats ?? 0) && (resolution.remainingSeats ?? 0) > 0
+      // Confirmed backend transitions prevent repeat clicks while ISR catches up.
+      setState((current) => current.round?.id === roundId ? { ...current,
+        phase: tieNeeded ? 'tie_break' : phase,
+        round: { ...current.round, phase, ...(kind === 'close' ? { closesAt: new Date(Math.min(Date.now(), Date.parse(current.round.closesAt ?? new Date().toISOString()))).toISOString() } : {}) },
+      } : current)
+      return result
+    }, kind === 'close' ? 'تم إغلاق الجولة' : kind === 'resolve' ? 'تم حساب النتيجة' : kind === 'tie' ? 'تم إعداد الجولة الفاصلة' : 'تم كشف الفائزين')
   }
   async function prepareRound() {
     if (tab === 'taif') {
@@ -39,7 +70,7 @@ export function AdminPage() {
       : { gameType: 'first_look', winnerCount: winners, correctCount: count, visualSeed: crypto.getRandomValues(new Uint32Array(1))[0] % 2147483647, visualCategory: 'leaves', displayDurationMs: 1800 }), 'تم إعداد الجولة لبداية بعد 15 ثانية')
   }
   async function startTaif() {
-    if (!taifRound || taifStarting || state.submittedCount < 4) return
+    if (!taifRound || taifStarting || submittedCount < 4) return
     setTaifStarting(true)
     try { await act(() => adminStartTaif(taifRound.id), 'بدأ وَهَج') } finally { setTaifStarting(false) }
   }
@@ -59,8 +90,8 @@ export function AdminPage() {
         </div>
         {tab === 'taif' ? <div className="taif-admin-flow">
           <div className="taif-fixed-winners"><span>الفائزون ثابتون</span><strong>٤</strong><small>٢ أخضر فاتح · ٢ أصفر فاتح</small></div>
-          {!taifRound ? <Button className="prepare-button" onClick={prepareRound}>فتح الاستعداد <Play size={18} /></Button>
-          : taifRound.phase === 'preparing' ? <><div className="taif-ready-count"><strong>{state.submittedCount}</strong><span>مستعد</span></div><Button className="prepare-button" disabled={state.submittedCount < 4 || taifStarting} onClick={() => void startTaif()}>ابدأ وَهَج <Play size={18} /></Button></>
+          {!taifRound ? <Button className="prepare-button" disabled={busy} onClick={prepareRound}>فتح الاستعداد <Play size={18} /></Button>
+          : taifRound.phase === 'preparing' ? <><div className="taif-ready-count"><strong>{submittedCount}</strong><span>مستعد</span></div><Button className="prepare-button" disabled={submittedCount < 4 || taifStarting || busy} onClick={() => void startTaif()}>ابدأ وَهَج <Play size={18} /></Button></>
           : <div className="schedule-callout"><Settings2 /><div><strong>وَهَج جارٍ الآن</strong><span>تم قفل قائمة المستعدين واختيار أربعة فائزين.</span></div></div>}
         </div> : <>
           <div className="control-form">
@@ -69,8 +100,8 @@ export function AdminPage() {
             : <><label><span>فئة العناصر</span><select defaultValue="leaves"><option value="seeds">بذور</option><option value="leaves">أوراق</option><option value="fish">أسماك</option><option value="bubbles">فقاعات</option><option value="random">عشوائي</option></select></label><label><span>عدد العناصر</span><input type="number" min="20" max="60" value={count} onChange={(event) => setCount(Number(event.target.value))} /></label><label><span>مدة العرض</span><select defaultValue="1800"><option value="1500">1.5 ثانية</option><option value="1800">1.8 ثانية</option><option value="2000">2.0 ثانية</option></select></label></>}
           </div>
           <div className="schedule-callout"><Settings2 /><div><strong>بداية مجدولة بعد 15 ثانية</strong><span>يصل التوقيت للجمهور مسبقًا ويبدأ محليًا بدقة.</span></div></div>
-          <Button className="prepare-button" onClick={prepareRound}>إعداد الجولة <Play size={18} /></Button>
-          {state.round && state.currentGame !== 'taif' && <div className="round-actions"><button onClick={() => void act(() => adminCloseRound(state.round!.id), 'تم إغلاق الجولة')}>إغلاق</button><button onClick={() => void act(() => adminResolveRound(state.round!.id), 'تم حساب النتيجة')}>حساب النتيجة</button><button onClick={() => void act(() => adminStartTieBreak(state.round!.id), 'تم إعداد الجولة الفاصلة')}>جولة فاصلة</button><button className="reveal" onClick={() => void act(() => adminRevealWinners(state.round!.id), 'تم كشف الفائزين')}>كشف الفائزين</button></div>}
+          <Button className="prepare-button" disabled={busy} onClick={prepareRound}>إعداد الجولة <Play size={18} /></Button>
+          {state.round && state.currentGame !== 'taif' && <div className="round-actions"><span>الإرساليات: {submittedCount}</span><button disabled={busy || !actions.close} onClick={() => void transition('close')}>إغلاق</button><button disabled={busy || !actions.resolve} onClick={() => void transition('resolve')}>حساب النتيجة</button>{actions.tie && <button disabled={busy} onClick={() => void transition('tie')}>جولة فاصلة</button>}<button className="reveal" disabled={busy || !actions.reveal} onClick={() => void transition('reveal')}>كشف الفائزين</button></div>}
         </>}
       </Card>
       <div className="admin-side">

@@ -3,6 +3,17 @@ import type { PollOptions, PublicEventState } from '../types'
 import { fetchPublicState } from '../lib/api'
 import { demoLobbyState } from '../lib/demo-state'
 
+export function mergePublicSnapshot(current: PublicEventState, next: PublicEventState) {
+  if (next.stateVersion > current.stateVersion) return next
+  // Counts change without a state-version bump. Never regress the phase/result
+  // (including an operator's confirmed transition) to an older cached snapshot.
+  if (next.stateVersion === current.stateVersion && next.round?.id === current.round?.id &&
+    Date.parse(next.serverPublishedAt) > Date.parse(current.serverPublishedAt)) {
+    return { ...current, registeredCount: next.registeredCount, submittedCount: next.submittedCount, serverPublishedAt: next.serverPublishedAt }
+  }
+  return current
+}
+
 export function pollingDelay(options: PollOptions, failureCount: number, random = Math.random()) {
   const base = options.operator ? 600 : options.taifReady ? 1500 : options.submitted ? 7000 : options.phase === 'preparing' || options.phase === 'countdown' ? 2000 : 6000
   const span = options.operator ? 400 : options.taifReady ? 1000 : options.submitted ? 5000 : options.phase === 'preparing' || options.phase === 'countdown' ? 2000 : 4000
@@ -32,9 +43,10 @@ export function usePublicState(options: PollOptions = {}, demoState = demoLobbyS
       try {
         const next = await fetchPublicState(controller.signal)
         lastFetchedRef.current = next
+        const firstSnapshot = !hydratedRef.current
         setState((current) => {
-          if (!hydratedRef.current || next.stateVersion > current.stateVersion) return next
-          return current
+          if (firstSnapshot) return next
+          return mergePublicSnapshot(current, next)
         })
         hydratedRef.current = true
         failureRef.current = 0

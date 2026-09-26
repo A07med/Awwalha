@@ -105,3 +105,11 @@ export const adminClearRegistrations = () => rpc('admin_clear_registrations', { 
 export async function adminRoundDetail(roundId: string) {
   return rpc<{ correctCount: number; visualSeed: number; visualCategory: 'seeds' | 'leaves' | 'fish' | 'bubbles' | 'drops'; displayDurationMs: number }>('admin_round_detail', { p_round_id: roundId })
 }
+
+// Authenticated operator only; not used by audience polling.
+export async function adminRoundStatus(roundId: string, signal: AbortSignal) {
+  if (!supabase) throw new Error('الخدمة تعمل الآن في وضع العرض')
+  const { data, error } = await supabase.rpc('admin_round_status', { p_round_id: roundId }).abortSignal(signal)
+  if (error) throw new Error(error.message)
+  return data as { submittedCount: number }
+}
