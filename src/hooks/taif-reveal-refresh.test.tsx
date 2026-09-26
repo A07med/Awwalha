@@ -21,6 +21,29 @@ afterEach(() => {
 })
 
 describe('Taif reveal refresh', () => {
+  it('retains a valid active screen on a failed poll without resubmitting or resetting', async () => {
+    const valid = { ...structuredClone(demoTaifState), stateVersion: 100 }
+    mocks.fetchPublicState.mockResolvedValueOnce(valid).mockRejectedValueOnce(new Error('temporary refresh failure'))
+    const view = renderHook(() => usePublicState({ active: false }))
+    await act(async () => { await view.result.current.refresh() })
+    expect(view.result.current.state).toEqual(valid)
+    await act(async () => { await view.result.current.refresh() })
+    expect(view.result.current.state).toEqual(valid)
+    expect(view.result.current.error).toBe('temporary refresh failure')
+    expect(mocks.fetchPublicState).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not regress to an older last-known-good snapshot and recovers on a newer revision', async () => {
+    const valid = { ...structuredClone(demoTaifState), stateVersion: 100 }
+    mocks.fetchPublicState.mockResolvedValueOnce(valid).mockResolvedValueOnce({ ...valid, stateVersion: 99, taifWinners: [] }).mockResolvedValueOnce({ ...valid, stateVersion: 101 })
+    const view = renderHook(() => usePublicState({ active: false }))
+    await act(async () => { await view.result.current.refresh() })
+    await act(async () => { await view.result.current.refresh() })
+    expect(view.result.current.state).toEqual(valid)
+    await act(async () => { await view.result.current.refresh() })
+    expect(view.result.current.state.stateVersion).toBe(101)
+  })
+
   it('coalesces an in-flight request, refreshes once at reveal, and keeps one polling loop', async () => {
     const beforeReveal = { ...structuredClone(demoTaifState), taifWinners: [] }
     let finishInitial!: (value: typeof beforeReveal) => void
