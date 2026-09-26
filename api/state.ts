@@ -1,25 +1,17 @@
+import { safePublicSnapshot } from './public-snapshot'
+
 export const config = { runtime: 'edge' }
 
-const fallback = {
-  stateVersion: 0,
-  registrationOpen: false,
-  phase: 'lobby',
-  currentGame: null,
-  round: null,
-  registeredCount: 0,
-  submittedCount: 0,
-  tieEligiblePublicIds: [],
-  winners: [],
-  taifWinners: [],
-  serverPublishedAt: new Date(0).toISOString(),
-}
+// Direct HTTP p99 measured 1487ms (SQL ~6ms). ISR serves its shared
+// last-good copy while refreshing; do not wait for Edge's 25s limit.
+export const REFRESH_TIMEOUT_MS = 2000
 
 export default async function handler() {
-  const url = process.env.SUPABASE_URL
-  const anonKey = process.env.SUPABASE_ANON_KEY
-  if (!url || !anonKey) return json(fallback)
-
+  const started = performance.now()
   try {
+    const url = process.env.SUPABASE_URL
+    const anonKey = process.env.SUPABASE_ANON_KEY
+    if (!url || !anonKey) throw new Error('configuration')
     const response = await fetch(url + '/rest/v1/rpc/public_event_state', {
       method: 'POST',
       headers: {
@@ -28,21 +20,29 @@ export default async function handler() {
         'content-type': 'application/json',
       },
       body: '{}',
+      signal: AbortSignal.timeout(REFRESH_TIMEOUT_MS),
     })
-    if (!response.ok) return json(fallback, 503)
-    return json(await response.json())
+    if (!response.ok) throw new Error('upstream')
+    const snapshot = safePublicSnapshot(await response.json())
+    const ms = Math.round(performance.now() - started)
+    console.info(JSON.stringify({ event: 'public_state_refresh', ok: true, ms, version: snapshot.stateVersion }))
+    return new Response(JSON.stringify(snapshot), {
+      headers: {
+        'content-type': 'application/json; charset=utf-8',
+        'cache-control': 'public, max-age=0, must-revalidate',
+        'x-content-type-options': 'nosniff',
+        'x-awwalha-state-delivery': 'isr-v1',
+        'x-awwalha-snapshot-at': new Date().toISOString(),
+        'server-timing': `state_refresh;dur=${ms}`,
+      },
+    })
   } catch {
-    return json(fallback, 503)
+    // Failed ISR regeneration must not overwrite the shared last-good copy
+    // with a synthetic lobby. A truly cold cache has no state to invent.
+    console.warn(JSON.stringify({ event: 'public_state_refresh', ok: false, ms: Math.round(performance.now() - started) }))
+    return new Response(JSON.stringify({ error: 'public_state_unavailable' }), {
+      status: 503,
+      headers: { 'content-type': 'application/json', 'cache-control': 'no-store' },
+    })
   }
-}
-
-function json(value: unknown, status = 200) {
-  return new Response(JSON.stringify(value), {
-    status,
-    headers: {
-      'content-type': 'application/json; charset=utf-8',
-      'cache-control': 'public, s-maxage=1, stale-while-revalidate=4',
-      'x-content-type-options': 'nosniff',
-    },
-  })
 }

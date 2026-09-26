@@ -1,20 +1,5 @@
 {
-  "framework": "vite",
-  "headers": [
-    {
-      "source": "/api/state",
-      "headers": [
-        { "key": "Cache-Control", "value": "public, s-maxage=1, stale-while-revalidate=4" }
-      ]
-    },
-    {
-      "source": "/api/time",
-      "headers": [
-        { "key": "Cache-Control", "value": "no-store" }
-      ]
-    }
-  ],
-  "rewrites": [
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
-  ]
+  "framework": null,
+  "buildCommand": "pnpm build:vercel",
+  "outputDirectory": ".vercel/output"
 }
