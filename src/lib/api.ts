@@ -109,7 +109,26 @@ export async function adminRoundDetail(roundId: string) {
 // Authenticated operator only; not used by audience polling.
 export async function adminRoundStatus(roundId: string, signal: AbortSignal) {
   if (!supabase) throw new Error('الخدمة تعمل الآن في وضع العرض')
-  const { data, error } = await supabase.rpc('admin_round_status', { p_round_id: roundId }).abortSignal(signal)
-  if (error) throw new Error(error.message)
+  const { data, error, status } = await supabase.rpc('admin_round_status', { p_round_id: roundId }).abortSignal(signal)
+  if (error) throw new AdminRpcError(error.message, status, error.code)
   return data as { submittedCount: number }
+}
+
+export class AdminRpcError extends Error {
+  constructor(message: string, public status: number, public code: string) { super(message) }
+}
+
+export async function verifyAdminAccess(): Promise<'allowed' | 'unauthenticated' | 'forbidden'> {
+  if (!supabase) return 'allowed'
+  const { data: session, error: sessionError } = await supabase.auth.getSession()
+  if (sessionError) throw sessionError
+  if (!session.session) return 'unauthenticated'
+  // Security-definer boolean checks auth.uid() membership; no admin list/table
+  // is exposed, and PostgREST independently validates the current JWT.
+  const { data, error, status } = await supabase.rpc('is_admin').abortSignal(AbortSignal.timeout(4000))
+  if (error) {
+    if (status === 401 || ['PGRST301', 'PGRST303'].includes(error.code)) return 'unauthenticated'
+    throw new AdminRpcError(error.message, status, error.code)
+  }
+  return data === true ? 'allowed' : 'forbidden'
 }

@@ -12,8 +12,8 @@ import { adminClearRegistrations, adminCloseRound, adminPrepareRound, adminPrepa
 
 export function AdminPage() {
   const { state, refresh, setState } = usePublicState({ phase: 'lobby', operator: true }, demoLobbyState)
-  const operatorCount = useOperatorRoundStatus(state.round?.id ?? null)
-  const submittedCount = operatorCount ?? state.submittedCount
+  const operatorStatus = useOperatorRoundStatus(state.round?.id ?? null, refresh)
+  const submittedCount = operatorStatus.submittedCount ?? (operatorStatus.error ? 0 : state.submittedCount)
   const [closedRoundId, setClosedRoundId] = useState<string | null>(null)
   const [confirmedTransition, setConfirmedTransition] = useState<ConfirmedAdminTransition | null>(null)
   const operatorState = confirmedAdminState(state, confirmedTransition)
@@ -113,7 +113,7 @@ export function AdminPage() {
         <Card className="safe-actions"><h3>إدارة الأمسية</h3><button onClick={() => void act(adminResetGames, 'تمت إعادة الألعاب إلى الردهة')}><RotateCcw /> إعادة ضبط الألعاب <small>يحفظ التسجيلات</small></button><button className="danger" onClick={() => window.confirm('سيتم حذف جميع التسجيلات والجلسات. هل أنت متأكد؟') && void act(adminClearRegistrations, 'تم حذف جميع التسجيلات')}><Trash2 /> حذف جميع التسجيلات <small>تأكيد إلزامي</small></button></Card>
       </div>
     </div>
-    <section className="operator-note"><UsersRound /><span>عدّاد الإرساليات يظهر للمشغّلين فقط ويُحدّث بطلب واحد غير متداخل.</span></section>
+    <section className="operator-note"><UsersRound /><span>{operatorStatus.error === 'invalid_round' ? 'الجولة المعروضة لم تعد متاحة؛ ننتظر تحديث حالة الأمسية.' : operatorStatus.error === 'authorization' ? 'حسابك غير مخوّل للإدارة؛ أُوقف تحديث العدّاد.' : operatorStatus.error === 'reauthenticate' ? 'انتهت جلسة الإدارة؛ أعد تسجيل الدخول.' : operatorStatus.error ? 'تعذر تحديث العدّاد؛ أُوقفت المحاولات المتكررة. حدّث الصفحة للمحاولة مجددًا.' : 'عدّاد الإرساليات يظهر للمشغّلين فقط ويُحدّث بطلب واحد غير متداخل.'}</span>{operatorStatus.error === 'reauthenticate' && <a href="/admin/login">دخول الفريق</a>}</section>
     {notice && <div className="toast">{notice}</div>}
   </PageShell>
 }

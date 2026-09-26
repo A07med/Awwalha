@@ -23,8 +23,8 @@ it('updates counts 1/2/3/4 with one bounded request at a time', async () => {
   status.mockResolvedValueOnce({ submittedCount: 1 }).mockResolvedValueOnce({ submittedCount: 2 }).mockResolvedValueOnce({ submittedCount: 3 }).mockResolvedValueOnce({ submittedCount: 4 })
   const { result } = renderHook(() => useOperatorRoundStatus('round'))
   await act(async () => {})
-  expect(result.current).toBe(1)
-  for (const count of [2, 3, 4]) { await act(async () => { await vi.advanceTimersByTimeAsync(1500) }); expect(result.current).toBe(count) }
+  expect(result.current.submittedCount).toBe(1)
+  for (const count of [2, 3, 4]) { await act(async () => { await vi.advanceTimersByTimeAsync(1500) }); expect(result.current.submittedCount).toBe(count) }
 })
 it('does not overlap pending requests, including repeated visibility events', async () => {
   let finish!: (value: { submittedCount: number }) => void
@@ -48,11 +48,43 @@ it('pauses when hidden and resumes promptly; aborts and ignores removed round re
   expect(status).toHaveBeenCalledTimes(2)
   let finish!: (value: { submittedCount: number }) => void
   status.mockReturnValueOnce(new Promise((resolve) => { finish = resolve })).mockResolvedValue({ submittedCount: 4 })
-  rerender({ id: 'b' }); expect(result.current).toBeNull()
+  rerender({ id: 'b' }); expect(result.current.submittedCount).toBeNull()
   const signal = status.mock.calls.at(-1)![1] as AbortSignal
   rerender({ id: 'c' }); expect(signal.aborted).toBe(true)
   await act(async () => { finish({ submittedCount: 99 }) })
-  expect(result.current).toBe(4)
+  expect(result.current.submittedCount).toBe(4)
+})
+it.each([
+  [{ message: 'admin_required', status: 400, code: '42501' }, 'authorization'],
+  [{ message: 'JWT expired', status: 401, code: 'PGRST301' }, 'reauthenticate'],
+  [{ message: 'signature mismatch', status: 404, code: 'PGRST202' }, 'unavailable'],
+] as const)('stops deterministic failure %s, including visibility changes', async (error, expected) => {
+  status.mockRejectedValue(error)
+  const { result } = renderHook(() => useOperatorRoundStatus('round'))
+  await act(async () => {})
+  expect(result.current.error).toBe(expected)
+  await act(async () => { document.dispatchEvent(new Event('visibilitychange')); await vi.advanceTimersByTimeAsync(60000) })
+  expect(status).toHaveBeenCalledTimes(1)
+})
+it('stops a stale round, refreshes public state once, and only resumes for a new ID', async () => {
+  status.mockRejectedValueOnce({ message: 'invalid_round', status: 400, code: '22023' }).mockResolvedValue({ submittedCount: 2 })
+  const refresh = vi.fn().mockResolvedValue(undefined)
+  const { result, rerender } = renderHook(({ id }) => useOperatorRoundStatus(id, refresh), { initialProps: { id: 'stale' } })
+  await act(async () => {})
+  expect(result.current.error).toBe('invalid_round'); expect(refresh).toHaveBeenCalledTimes(1)
+  await act(async () => { document.dispatchEvent(new Event('visibilitychange')); await vi.advanceTimersByTimeAsync(60000) })
+  expect(status).toHaveBeenCalledTimes(1)
+  rerender({ id: 'new' }); await act(async () => {})
+  expect(result.current.submittedCount).toBe(2); expect(result.current.error).toBeNull()
+  rerender({ id: 'stale' }); await act(async () => {})
+  expect(result.current.error).toBe('invalid_round'); expect(status).toHaveBeenCalledTimes(2)
+})
+it('retries transient failures with backoff but stops after five consecutive failures', async () => {
+  status.mockRejectedValue({ message: 'upstream failure', status: 503 })
+  const { result } = renderHook(() => useOperatorRoundStatus('round'))
+  await act(async () => { await vi.advanceTimersByTimeAsync(60000) })
+  expect(status).toHaveBeenCalledTimes(5)
+  expect(result.current.error).toBe('unavailable')
 })
 it('never polls on demo/audience usage without an operator round', async () => {
   renderHook(() => useOperatorRoundStatus(null))

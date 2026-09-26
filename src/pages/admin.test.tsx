@@ -6,7 +6,7 @@ const mocks = vi.hoisted(() => ({ state: null as unknown as typeof demoPerfectSt
   close: vi.fn(), resolve: vi.fn(), tie: vi.fn(), reveal: vi.fn(), refresh: vi.fn(), setState: vi.fn() }))
 vi.mock('qrcode', () => ({ default: { toDataURL: async () => '' } }))
 vi.mock('../hooks/use-public-state', () => ({ usePublicState: () => ({ state: mocks.state, refresh: mocks.refresh, setState: mocks.setState }) }))
-vi.mock('../hooks/use-operator-round-status', () => ({ useOperatorRoundStatus: () => mocks.count }))
+vi.mock('../hooks/use-operator-round-status', () => ({ useOperatorRoundStatus: () => ({ submittedCount: mocks.count, error: null }) }))
 vi.mock('../lib/api', () => ({ adminCloseRound: mocks.close, adminResolveRound: mocks.resolve, adminStartTieBreak: mocks.tie, adminRevealWinners: mocks.reveal,
   adminClearRegistrations: vi.fn(), adminPrepareRound: vi.fn(), adminPrepareTaif: vi.fn(), adminResetGames: vi.fn(), adminSetRegistration: vi.fn(), adminStartTaif: vi.fn() }))
 beforeEach(() => {
