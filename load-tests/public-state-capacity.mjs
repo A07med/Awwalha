@@ -254,7 +254,7 @@ async function fullFlow(n, focused = false) {
   const required = Math.ceil(n * .99)
   const baseline = await baselineState()
   if (baseline.registration_open || baseline.current_round_id || baseline.public_phase !== 'lobby') throw new Error('Staging baseline changed; refusing to write')
-  const existing = (await db(`select (select count(*) from auth.users where id='${adminId}') as admins,(select count(*) from public.participants where phone_e164 between '+968${phoneBase}' and '+968${phoneBase+n-1}') as participants`))[0]
+  const existing = (await db(`select (select count(*) from auth.users where id='${adminId}' or email='final-loadtest@awwalha.invalid') as admins,(select count(*) from public.participants where phone_e164 between '+968${phoneBase}' and '+968${phoneBase+n-1}') as participants`))[0]
   if (existing.admins || existing.participants) throw new Error('Dedicated staging test identifiers already exist')
   const sqlBefore = {
     state: await stateSqlStats(), registration: await registrationSqlStats(),
@@ -284,8 +284,13 @@ async function fullFlow(n, focused = false) {
   const args = Array.from({ length: n }, (_, i) => credentials(phoneBase, i, 'D'))
   try {
     const password = randomBytes(24).toString('hex')
-    await db(`insert into auth.users(id,instance_id,aud,role,email,encrypted_password,email_confirmed_at,confirmation_token,recovery_token,email_change_token_new,email_change) values ('${adminId}','00000000-0000-0000-0000-000000000000','authenticated','authenticated','final-loadtest@awwalha.invalid',extensions.crypt('${password}',extensions.gen_salt('bf')),now(),'','','',''); insert into public.admin_profiles(user_id,display_name) values ('${adminId}','Final Preview Load Test'); select true as created`)
+    const service = process.env.TEST_AUTH_ADMIN_KEY
+    if (!service) throw new Error('Missing test-runner-only auth administration key')
+    const provision = await fetch(supabase + '/auth/v1/admin/users', { method: 'POST', headers: { apikey: service, authorization: 'Bearer ' + service, 'content-type': 'application/json' }, body: JSON.stringify({ id: adminId, email: 'final-loadtest@awwalha.invalid', password, email_confirm: true }), signal: AbortSignal.timeout(10000) })
+    const provisioned = await provision.json()
+    if (!provision.ok || provisioned.id !== adminId) throw new Error('Temporary admin provisioning failed')
     created = true
+    await db(`insert into public.admin_profiles(user_id,display_name) values ('${adminId}','Final Preview Load Test'); select true as created`)
     const auth = await fetch(supabase + '/auth/v1/token?grant_type=password', { method: 'POST', headers: { apikey: anon, 'content-type': 'application/json' }, body: JSON.stringify({ email: 'final-loadtest@awwalha.invalid', password }), signal: AbortSignal.timeout(10000) })
     const signedIn = await auth.json()
     if (!auth.ok || !signedIn.access_token) throw new Error('Temporary staging admin could not authenticate: ' + (signedIn.error_code ?? auth.status))
