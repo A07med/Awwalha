@@ -11,6 +11,9 @@ import { useOperatorRoundStatus } from '../hooks/use-operator-round-status'
 import { adminErrorMessage, adminRoundActions, confirmedAdminState, type ConfirmedAdminTransition } from '../lib/admin-actions'
 import { adminClearRegistrations, adminCloseRound, adminPrepareRound, adminPrepareTaif, adminResetGames, adminRevealWinners, adminSetRegistration, adminStartTaif, adminStartTieBreak, adminResolveRound, adminFirstLookSummary, adminAcceptFirstLookTie, type FirstLookSummary } from '../lib/api'
 
+const firstLookCategories = ['seeds', 'leaves', 'fish', 'bubbles'] as const
+type FirstLookCategorySelection = typeof firstLookCategories[number] | 'random'
+
 export function AdminPage() {
   const { state, refresh, setState } = usePublicState({ phase: 'lobby', operator: true }, import.meta.env.VITE_APP_MODE === 'supabase' ? stageLoadingState : demoLobbyState)
   const operatorStatus = useOperatorRoundStatus(state.round?.id ?? null, refresh)
@@ -24,7 +27,10 @@ export function AdminPage() {
   const [tab, setTab] = useState<'perfect' | 'look' | 'taif'>('perfect')
   const [winners, setWinners] = useState(3)
   const [target, setTarget] = useState('6.000')
+  const [hideTimerAfterMs, setHideTimerAfterMs] = useState(1500)
   const [count, setCount] = useState(36)
+  const [visualCategory, setVisualCategory] = useState<FirstLookCategorySelection>('leaves')
+  const [displayDurationMs, setDisplayDurationMs] = useState(1800)
   const [qr, setQr] = useState('')
   const [notice, setNotice] = useState('')
   const [taifStarting, setTaifStarting] = useState(false)
@@ -92,8 +98,10 @@ export function AdminPage() {
     }
     const value = Number(target)
     await act(() => adminPrepareRound(tab === 'perfect'
-      ? { gameType: 'perfect_second', winnerCount: winners, targetMs: Math.round(value * 1000), hideTimerAfterMs: 1500 }
-      : { gameType: 'first_look', winnerCount: winners, correctCount: count, visualSeed: crypto.getRandomValues(new Uint32Array(1))[0] % 2147483647, visualCategory: 'leaves', displayDurationMs: 1800 }), 'تم إعداد الجولة لبداية بعد 15 ثانية')
+      ? { gameType: 'perfect_second', winnerCount: winners, targetMs: Math.round(value * 1000), hideTimerAfterMs }
+      : { gameType: 'first_look', winnerCount: winners, correctCount: count, visualSeed: crypto.getRandomValues(new Uint32Array(1))[0] % 2147483647,
+        visualCategory: visualCategory === 'random' ? firstLookCategories[crypto.getRandomValues(new Uint32Array(1))[0] % firstLookCategories.length] : visualCategory,
+        displayDurationMs }), 'تم إعداد الجولة لبداية بعد 15 ثانية')
   }
   async function startTaif() {
     if (!taifRound || taifStarting || submittedCount < 4) return
@@ -122,8 +130,8 @@ export function AdminPage() {
         </div> : <>
           <div className="control-form">
             <label><span>عدد الفائزين</span><div className="stepper"><button onClick={() => setWinners(Math.max(1, winners - 1))}>−</button><strong>{winners}</strong><button onClick={() => setWinners(Math.min(6, winners + 1))}>+</button></div></label>
-            {tab === 'perfect' ? <><label><span>الوقت المستهدف</span><div className="unit-input"><input dir="ltr" value={target} onChange={(event) => setTarget(event.target.value)} /><b>ث</b></div></label><label><span>إخفاء العداد بعد</span><select defaultValue="1500"><option value="1500">1.5 ثانية</option><option value="1800">1.8 ثانية</option><option value="2000">2.0 ثانية</option></select></label></>
-            : <><label><span>فئة العناصر</span><select defaultValue="leaves"><option value="seeds">بذور</option><option value="leaves">أوراق</option><option value="fish">أسماك</option><option value="bubbles">فقاعات</option><option value="random">عشوائي</option></select></label><label><span>عدد العناصر</span><input type="number" min="20" max="60" value={count} onChange={(event) => setCount(Number(event.target.value))} /></label><label><span>مدة العرض</span><select defaultValue="1800"><option value="1500">1.5 ثانية</option><option value="1800">1.8 ثانية</option><option value="2000">2.0 ثانية</option></select></label></>}
+            {tab === 'perfect' ? <><label><span>الوقت المستهدف</span><div className="unit-input"><input dir="ltr" value={target} onChange={(event) => setTarget(event.target.value)} /><b>ث</b></div></label><label><span>إخفاء العداد بعد</span><select value={hideTimerAfterMs} onChange={(event) => setHideTimerAfterMs(Number(event.target.value))}><option value="1500">1.5 ثانية</option><option value="1800">1.8 ثانية</option><option value="2000">2.0 ثانية</option></select></label></>
+            : <><label><span>فئة العناصر</span><select value={visualCategory} onChange={(event) => setVisualCategory(event.target.value as FirstLookCategorySelection)}><option value="seeds">بذور</option><option value="leaves">أوراق</option><option value="fish">أسماك</option><option value="bubbles">فقاعات</option><option value="random">عشوائي</option></select></label><label><span>عدد العناصر</span><input type="number" min="20" max="60" value={count} onChange={(event) => setCount(Number(event.target.value))} /></label><label><span>مدة العرض</span><select value={displayDurationMs} onChange={(event) => setDisplayDurationMs(Number(event.target.value))}><option value="1500">1.5 ثانية</option><option value="1800">1.8 ثانية</option><option value="2000">2.0 ثانية</option><option value="3000">3 ثوانٍ</option><option value="4000">4 ثوانٍ</option><option value="5000">5 ثوانٍ</option></select></label></>}
           </div>
           <div className="schedule-callout"><Settings2 /><div><strong>بداية مجدولة بعد 15 ثانية</strong><span>يصل التوقيت للجمهور مسبقًا ويبدأ محليًا بدقة.</span></div></div>
           <Button className="prepare-button" disabled={busy} onClick={prepareRound}>إعداد الجولة <Play size={18} /></Button>
