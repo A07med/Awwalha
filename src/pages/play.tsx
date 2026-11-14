@@ -20,7 +20,8 @@ export function PlayPage() {
   const round = state.round
   const offsetMs = useClockSync(Boolean(round?.startsAt))
   const { elapsedMs } = useScheduledClock(round?.startsAt, offsetMs)
-  const active = round?.phase === 'active' && elapsedMs >= 0
+  const localDeadlineMs = round?.startsAt && round.closesAt ? Date.parse(round.closesAt) - Date.parse(round.startsAt) : -1
+  const active = Boolean(round && (round.phase === 'preparing' || round.phase === 'active') && elapsedMs >= 0 && elapsedMs <= localDeadlineMs)
   useEffect(() => setTimingCritical(Boolean(active && !submitted)), [active, submitted])
   const hiddenTimer = active && round?.gameType === 'perfect_second' && elapsedMs > (round.hideTimerAfterMs ?? 1500)
   const isTieSpectator = state.phase === 'tie_break' && !state.tieEligiblePublicIds.includes(session.participantPublicId)
@@ -41,7 +42,7 @@ export function PlayPage() {
 
   async function confirmGuess(event: React.FormEvent) {
     event.preventDefault()
-    if (!round || submitted || !/^\d+$/.test(guess)) return
+    if (!round || submitted || !active || !/^\d+$/.test(guess)) return
     setSubmitted(true)
     setResult('إجابتك: ' + guess)
     if (import.meta.env.VITE_APP_MODE === 'supabase') await submitFirstLook(session.token, round.id, Number(guess))
@@ -64,7 +65,7 @@ export function PlayPage() {
       <div className="game-kicker"><Eye /> أول نظرة</div>
       <p>كم عنصر شفت؟</p>
       {submitted ? <div className="submitted-result"><Check /><span>تم تثبيت إجابتك</span><strong>{result}</strong><small>انتظر كشف الإجابة على الشاشة</small></div>
-      : <form className="guess-form" onSubmit={confirmGuess}><input aria-label="عدد العناصر" inputMode="numeric" pattern="[0-9]*" value={guess} onChange={(event) => setGuess(event.target.value)} placeholder="؟" autoFocus /><Button type="submit">تأكيد</Button></form>}
+      : <form className="guess-form" onSubmit={confirmGuess}><input aria-label="عدد العناصر" inputMode="numeric" pattern="[0-9]*" value={guess} onChange={(event) => setGuess(event.target.value)} placeholder="؟" autoFocus disabled={!active} /><Button type="submit" disabled={!active}>تأكيد</Button></form>}
     </Card>}
     <footer className="participant-footer"><span className="connection-dot" /> التحديث موزّع تلقائيًا <span>·</span> لا تغلق الصفحة</footer>
   </PageShell>
